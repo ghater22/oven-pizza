@@ -34,6 +34,17 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-back" size={18} color="#7A6A5F" />
         </Pressable>
 
+        <Pressable
+          onPress={() => router.push('/products')}
+          accessibilityRole="button"
+          className="mt-3 flex-row-reverse items-center justify-between rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark"
+        >
+          <Text className="font-cairo-medium text-base text-text-primary dark:text-text-primary-dark">
+            إدارة المنتجات
+          </Text>
+          <Ionicons name="chevron-back" size={18} color="#7A6A5F" />
+        </Pressable>
+
         <View className="mt-8">
           <PrimaryButton label="تسجيل الخروج" onPress={handleLogout} variant="secondary" />
         </View>
