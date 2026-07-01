@@ -77,6 +77,7 @@ export async function createRevenue(branchId: string, input: RevenueInput): Prom
     timestamp: Timestamp.fromDate(input.timestamp),
     note: input.note ?? null,
     createdBy: input.createdBy,
+    createdAt: Timestamp.now(),
   });
 }
 
@@ -94,6 +95,7 @@ export async function updateRevenue(
     date: toDateKey(input.timestamp),
     timestamp: Timestamp.fromDate(input.timestamp),
     note: input.note ?? null,
+    updatedAt: Timestamp.now(),
   });
 }
 

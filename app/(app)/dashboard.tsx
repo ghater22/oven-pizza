@@ -4,7 +4,9 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BranchSwitcher } from '@/src/components/BranchSwitcher';
+import { EmptyState } from '@/src/components/EmptyState';
 import { InsightBanner } from '@/src/components/InsightBanner';
+import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { StatCard } from '@/src/components/StatCard';
 import { useDashboardSummary } from '@/src/hooks/useDashboardSummary';
 import { useSmartInsights } from '@/src/hooks/useSmartInsights';
@@ -48,6 +50,16 @@ export default function DashboardScreen() {
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color="#D64535" size="large" />
+        </View>
+      ) : branches.length === 0 ? (
+        <View className="flex-1">
+          <EmptyState
+            title="لا توجد فروع بعد"
+            description="أضف أول فرع من الإعدادات ← إدارة الفروع لبدء تسجيل الإيرادات والمصروفات."
+          />
+          <View className="px-6 pb-6">
+            <PrimaryButton label="الذهاب إلى الإعدادات" onPress={() => router.push('/settings')} />
+          </View>
         </View>
       ) : (
         <ScrollView contentContainerClassName="px-5 pb-8">

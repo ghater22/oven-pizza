@@ -69,6 +69,7 @@ export async function createExpense(branchId: string, input: ExpenseInput): Prom
     timestamp: Timestamp.fromDate(input.timestamp),
     note: input.note ?? null,
     createdBy: input.createdBy,
+    createdAt: Timestamp.now(),
   });
 }
 
@@ -83,6 +84,7 @@ export async function updateExpense(
     date: toDateKey(input.timestamp),
     timestamp: Timestamp.fromDate(input.timestamp),
     note: input.note ?? null,
+    updatedAt: Timestamp.now(),
   });
 }
 
