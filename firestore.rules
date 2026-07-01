@@ -8,10 +8,15 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
+    function isOwner() {
+      return isAuthorized() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'owner';
+    }
+
     match /users/{uid} {
-      // كل مستخدم يقرأ وثيقته فقط؛ لا كتابة من التطبيق (تُنشأ يدويًا من Firebase Console).
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if false;
+      allow read: if request.auth != null && (request.auth.uid == uid || isOwner());
+      allow create: if isOwner();
+      allow update, delete: if false;
     }
 
     match /branches/{branchId} {

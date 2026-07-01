@@ -51,6 +51,7 @@ export default function RevenueScreen() {
   const [mode, setMode] = useState<'list' | 'add' | 'edit'>('list');
   const [editingRevenue, setEditingRevenue] = useState<Revenue | null>(null);
   const [saving, setSaving] = useState(false);
+  const [quickQuantity, setQuickQuantity] = useState(1);
 
   const visibleRevenues =
     selectedBranchId === 'all'
@@ -85,6 +86,25 @@ export default function RevenueScreen() {
         createdBy: uid,
       });
       setMode('list');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleQuickSale(productId: string) {
+    const product = products.find((item) => item.id === productId);
+    if (!product || !defaultBranchId) return;
+
+    setSaving(true);
+    try {
+      await createRevenue(defaultBranchId, {
+        productId: product.id,
+        productName: product.name,
+        quantity: quickQuantity,
+        unitPrice: product.price,
+        timestamp: buildTimestamp(),
+        createdBy: uid,
+      });
     } finally {
       setSaving(false);
     }
@@ -151,6 +171,64 @@ export default function RevenueScreen() {
       {mode === 'list' ? (
         <>
           <BranchSwitcher />
+
+          {products.length > 0 && defaultBranchId ? (
+            <View className="px-5 pb-4">
+              <View className="mb-2 flex-row-reverse items-center justify-between">
+                <Text className="font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
+                  بيع سريع
+                </Text>
+                <View className="flex-row-reverse items-center gap-2">
+                  <Pressable
+                    onPress={() => setQuickQuantity((value) => Math.max(1, value - 1))}
+                    accessibilityRole="button"
+                    accessibilityLabel="تقليل الكمية"
+                    className="h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface dark:border-border-dark dark:bg-surface-dark"
+                  >
+                    <Text className="font-cairo-bold text-lg text-text-primary dark:text-text-primary-dark">-</Text>
+                  </Pressable>
+                  <Text className="w-8 text-center font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
+                    {quickQuantity}
+                  </Text>
+                  <Pressable
+                    onPress={() => setQuickQuantity((value) => value + 1)}
+                    accessibilityRole="button"
+                    accessibilityLabel="زيادة الكمية"
+                    className="h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface dark:border-border-dark dark:bg-surface-dark"
+                  >
+                    <Text className="font-cairo-bold text-lg text-text-primary dark:text-text-primary-dark">+</Text>
+                  </Pressable>
+                </View>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="max-h-16" contentContainerClassName="h-14 items-center gap-2">
+                {products.map((product) => (
+                  <Pressable
+                    key={product.id}
+                    onPress={() => handleQuickSale(product.id)}
+                    disabled={saving}
+                    accessibilityRole="button"
+                    accessibilityLabel={`بيع ${product.name}`}
+                    className="h-12 min-w-32 items-center justify-center rounded-xl bg-secondary px-4 dark:bg-secondary-dark"
+                  >
+                    <Text numberOfLines={1} className="font-cairo-semibold text-sm text-text-primary">
+                      {product.name}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          ) : (
+            <View className="px-5 pb-4">
+              <View className="rounded-xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+                <Text className="text-right font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
+                  البيع السريع
+                </Text>
+                <Text className="mt-1 text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">
+                  أضف منتجات من الإعدادات لتظهر هنا كأزرار بيع جاهزة بالسعر والكمية.
+                </Text>
+              </View>
+            </View>
+          )}
 
           <View className="flex-row-reverse items-center justify-between px-5 pb-3">
             <Pressable onPress={() => changeDay(-1)} accessibilityLabel="اليوم السابق">

@@ -68,6 +68,17 @@ export default function SettingsScreen() {
           <AppIcon name="chevron-left" size={18} color="#7A6A5F" />
         </Pressable>
 
+        <Pressable
+          onPress={() => router.push('/backup' as never)}
+          accessibilityRole="button"
+          className="mt-3 flex-row-reverse items-center justify-between rounded-xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark"
+        >
+          <Text className="font-cairo-medium text-base text-text-primary dark:text-text-primary-dark">
+            النسخ الاحتياطي والتصدير
+          </Text>
+          <AppIcon name="chevron-left" size={18} color="#7A6A5F" />
+        </Pressable>
+
         <View className="mt-8 gap-3">
           <PwaInstallButton />
           <PrimaryButton label="تسجيل الخروج" onPress={handleLogout} variant="secondary" />
