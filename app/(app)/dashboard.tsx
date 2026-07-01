@@ -4,13 +4,16 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BranchSwitcher } from '@/src/components/BranchSwitcher';
+import { InsightBanner } from '@/src/components/InsightBanner';
 import { StatCard } from '@/src/components/StatCard';
 import { useDashboardSummary } from '@/src/hooks/useDashboardSummary';
+import { useSmartInsights } from '@/src/hooks/useSmartInsights';
 import { useBranchStore } from '@/src/store/branch';
 import { formatAmount } from '@/src/utils/currency';
 
 export default function DashboardScreen() {
   const { branches, summary, loading } = useDashboardSummary();
+  const { insights } = useSmartInsights();
   const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
 
   const selectedTotals =
@@ -63,6 +66,17 @@ export default function DashboardScreen() {
               tone={selectedTotals.netProfit >= 0 ? 'success' : 'danger'}
             />
           </View>
+
+          {insights.length > 0 ? (
+            <View className="mt-6">
+              <Text className="mb-3 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
+                رؤى ذكية
+              </Text>
+              {insights.map((insight) => (
+                <InsightBanner key={insight.id} insight={insight} />
+              ))}
+            </View>
+          ) : null}
 
           {branches.length > 1 ? (
             <View className="mt-6">
