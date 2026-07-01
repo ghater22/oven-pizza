@@ -77,6 +77,8 @@ export default function AppLayout() {
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="branches" options={{ href: null }} />
       <Tabs.Screen name="products" options={{ href: null }} />
+      <Tabs.Screen name="activity" options={{ href: null }} />
+      <Tabs.Screen name="users" options={{ href: null }} />
     </Tabs>
   );
 }

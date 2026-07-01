@@ -101,7 +101,7 @@ export default function ExpensesScreen() {
       if (!editingExpense) return;
       setSaving(true);
       try {
-        await deleteExpense(editingExpense.branchId, editingExpense.id);
+        await deleteExpense(editingExpense.branchId, editingExpense.id, uid);
         setMode('list');
         setEditingExpense(null);
       } finally {

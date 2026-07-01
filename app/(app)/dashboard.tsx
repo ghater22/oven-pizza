@@ -8,13 +8,16 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { InsightBanner } from '@/src/components/InsightBanner';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { StatCard } from '@/src/components/StatCard';
+import { aggregateProductPerformance, topByQuantity } from '@/src/features/analytics/productPerformance';
 import { useDashboardSummary } from '@/src/hooks/useDashboardSummary';
+import { useProducts } from '@/src/hooks/useProducts';
 import { useSmartInsights } from '@/src/hooks/useSmartInsights';
 import { useBranchStore } from '@/src/store/branch';
 import { formatAmount } from '@/src/utils/currency';
 
 export default function DashboardScreen() {
-  const { branches, summary, loading } = useDashboardSummary();
+  const { branches, summary, revenues, expenses, loading } = useDashboardSummary();
+  const { products } = useProducts();
   const { insights } = useSmartInsights();
   const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
 
@@ -28,6 +31,10 @@ export default function DashboardScreen() {
         });
 
   const bestBranch = branches.find((branch) => branch.id === summary.bestBranchId);
+  const [bestProduct] = topByQuantity(aggregateProductPerformance(revenues, products), 1);
+  const silentBranches = branches.filter(
+    (branch) => !revenues.some((revenue) => revenue.branchId === branch.id)
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
@@ -77,6 +84,33 @@ export default function DashboardScreen() {
               icon="wallet"
               tone={selectedTotals.netProfit >= 0 ? 'success' : 'danger'}
             />
+          </View>
+
+          <View className="mt-5 rounded-xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+            <Text className="mb-3 text-right font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
+              التقرير اليومي
+            </Text>
+            <View className="gap-2">
+              <Text className="text-right font-cairo text-sm text-text-secondary dark:text-text-secondary-dark">
+                عدد الإيرادات: {revenues.length} | عدد المصروفات: {expenses.length}
+              </Text>
+              <Text className="text-right font-cairo text-sm text-text-secondary dark:text-text-secondary-dark">
+                أفضل منتج: {bestProduct ? bestProduct.productName : 'لا يوجد'}
+              </Text>
+              <Text className="text-right font-cairo text-sm text-text-secondary dark:text-text-secondary-dark">
+                أفضل فرع: {bestBranch?.name ?? 'لا يوجد'}
+              </Text>
+              {summary.totalExpense > summary.totalRevenue ? (
+                <Text className="text-right font-cairo-semibold text-sm text-danger dark:text-danger-dark">
+                  تنبيه: المصروفات أعلى من الإيرادات اليوم.
+                </Text>
+              ) : null}
+              {silentBranches.length > 0 ? (
+                <Text className="text-right font-cairo-semibold text-sm text-danger dark:text-danger-dark">
+                  فروع بدون مبيعات اليوم: {silentBranches.map((branch) => branch.name).join('، ')}
+                </Text>
+              ) : null}
+            </View>
           </View>
 
           {insights.length > 0 ? (

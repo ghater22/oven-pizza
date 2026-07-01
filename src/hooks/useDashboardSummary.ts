@@ -34,6 +34,8 @@ export function useDashboardSummary() {
   }, [branchIds]);
 
   const summary = summarizePeriod(branches, revenuesByBranch, expensesByBranch);
+  const revenues = branches.flatMap((branch) => revenuesByBranch[branch.id] ?? []);
+  const expenses = branches.flatMap((branch) => expensesByBranch[branch.id] ?? []);
 
-  return { branches, summary, loading: branchesLoading };
+  return { branches, summary, revenues, expenses, loading: branchesLoading };
 }

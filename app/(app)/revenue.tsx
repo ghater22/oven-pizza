@@ -115,7 +115,7 @@ export default function RevenueScreen() {
       if (!editingRevenue) return;
       setSaving(true);
       try {
-        await deleteRevenue(editingRevenue.branchId, editingRevenue.id);
+            await deleteRevenue(editingRevenue.branchId, editingRevenue.id, uid);
         setMode('list');
         setEditingRevenue(null);
       } finally {

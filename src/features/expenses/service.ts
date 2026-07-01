@@ -13,6 +13,7 @@ import {
 
 import { getFirestoreDb } from '@/src/firebase/config';
 import { toDateKey } from '@/src/utils/date';
+import { logOperation } from '@/src/features/audit/service';
 
 import type { Expense, ExpenseCategory } from './types';
 
@@ -62,7 +63,7 @@ export interface ExpenseInput {
 }
 
 export async function createExpense(branchId: string, input: ExpenseInput): Promise<void> {
-  await addDoc(expensesCollection(branchId), {
+  const docRef = await addDoc(expensesCollection(branchId), {
     category: input.category,
     amount: input.amount,
     date: toDateKey(input.timestamp),
@@ -70,6 +71,14 @@ export async function createExpense(branchId: string, input: ExpenseInput): Prom
     note: input.note ?? null,
     createdBy: input.createdBy,
     createdAt: Timestamp.now(),
+  });
+  await logOperation({
+    action: 'create',
+    entity: 'expense',
+    entityId: docRef.id,
+    label: input.category,
+    branchId,
+    userId: input.createdBy,
   });
 }
 
@@ -88,6 +97,14 @@ export async function updateExpense(
   });
 }
 
-export async function deleteExpense(branchId: string, expenseId: string): Promise<void> {
+export async function deleteExpense(branchId: string, expenseId: string, userId = ''): Promise<void> {
   await deleteDoc(doc(expensesCollection(branchId), expenseId));
+  await logOperation({
+    action: 'delete',
+    entity: 'expense',
+    entityId: expenseId,
+    label: 'مصروف',
+    branchId,
+    userId,
+  });
 }

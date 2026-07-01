@@ -8,10 +8,12 @@ import { AppTextInput } from '@/src/components/AppTextInput';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { createBranch, deleteBranch, renameBranch } from '@/src/features/branches/service';
 import { useBranches } from '@/src/hooks/useBranches';
+import { useAuthStore } from '@/src/store/auth';
 import { confirmAction } from '@/src/utils/confirmAction';
 
 export default function BranchesScreen() {
   const { branches, loading } = useBranches();
+  const uid = useAuthStore((state) => state.user?.uid ?? '');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [newBranchName, setNewBranchName] = useState('');
@@ -26,7 +28,7 @@ export default function BranchesScreen() {
     if (!editingId || !editName.trim()) return;
     setSaving(true);
     try {
-      await renameBranch(editingId, editName.trim());
+      await renameBranch(editingId, editName.trim(), uid);
       setEditingId(null);
     } finally {
       setSaving(false);
@@ -38,7 +40,7 @@ export default function BranchesScreen() {
     setSaving(true);
     try {
       const nextOrder = branches.reduce((max, branch) => Math.max(max, branch.order), 0) + 1;
-      await createBranch(newBranchName.trim(), nextOrder);
+      await createBranch(newBranchName.trim(), nextOrder, uid);
       setNewBranchName('');
     } finally {
       setSaving(false);
@@ -49,7 +51,7 @@ export default function BranchesScreen() {
     confirmAction('حذف الفرع', `هل تريد حذف فرع ${name}؟ ستبقى السجلات السابقة محفوظة.`, async () => {
       setSaving(true);
       try {
-        await deleteBranch(branchId);
+        await deleteBranch(branchId, name, uid);
       } finally {
         setSaving(false);
       }

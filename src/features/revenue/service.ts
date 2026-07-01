@@ -13,6 +13,7 @@ import {
 
 import { getFirestoreDb } from '@/src/firebase/config';
 import { toDateKey } from '@/src/utils/date';
+import { logOperation } from '@/src/features/audit/service';
 
 import type { Revenue } from './types';
 
@@ -67,7 +68,7 @@ export interface RevenueInput {
 }
 
 export async function createRevenue(branchId: string, input: RevenueInput): Promise<void> {
-  await addDoc(revenuesCollection(branchId), {
+  const docRef = await addDoc(revenuesCollection(branchId), {
     productId: input.productId,
     productName: input.productName,
     quantity: input.quantity,
@@ -78,6 +79,14 @@ export async function createRevenue(branchId: string, input: RevenueInput): Prom
     note: input.note ?? null,
     createdBy: input.createdBy,
     createdAt: Timestamp.now(),
+  });
+  await logOperation({
+    action: 'create',
+    entity: 'revenue',
+    entityId: docRef.id,
+    label: input.productName,
+    branchId,
+    userId: input.createdBy,
   });
 }
 
@@ -99,6 +108,14 @@ export async function updateRevenue(
   });
 }
 
-export async function deleteRevenue(branchId: string, revenueId: string): Promise<void> {
+export async function deleteRevenue(branchId: string, revenueId: string, userId = ''): Promise<void> {
   await deleteDoc(doc(revenuesCollection(branchId), revenueId));
+  await logOperation({
+    action: 'delete',
+    entity: 'revenue',
+    entityId: revenueId,
+    label: 'إيراد',
+    branchId,
+    userId,
+  });
 }

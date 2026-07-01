@@ -1,6 +1,7 @@
 import { addDoc, collection, doc, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore';
 
 import { getFirestoreDb } from '@/src/firebase/config';
+import { logOperation } from '@/src/features/audit/service';
 
 import type { Product } from './types';
 
@@ -25,21 +26,38 @@ export async function createProduct(input: {
   category: string;
   price: number;
   cost?: number;
+  userId?: string;
 }): Promise<void> {
-  await addDoc(collection(getFirestoreDb(), COLLECTION), {
-    ...input,
+  const { userId, ...productInput } = input;
+  const docRef = await addDoc(collection(getFirestoreDb(), COLLECTION), {
+    ...productInput,
     active: true,
     createdAt: new Date(),
+  });
+  await logOperation({
+    action: 'create',
+    entity: 'product',
+    entityId: docRef.id,
+    label: input.name,
+    userId: userId ?? '',
   });
 }
 
 export async function updateProduct(
   productId: string,
-  input: Partial<Pick<Product, 'name' | 'category' | 'price' | 'cost' | 'active'>>
+  input: Partial<Pick<Product, 'name' | 'category' | 'price' | 'cost' | 'active'>> & { userId?: string }
 ): Promise<void> {
-  await updateDoc(doc(getFirestoreDb(), COLLECTION, productId), input);
+  const { userId, ...updates } = input;
+  await updateDoc(doc(getFirestoreDb(), COLLECTION, productId), updates);
+  await logOperation({
+    action: updates.active === false ? 'delete' : 'update',
+    entity: 'product',
+    entityId: productId,
+    label: updates.name ?? 'منتج',
+    userId: userId ?? '',
+  });
 }
 
-export async function deleteProduct(productId: string): Promise<void> {
-  await updateProduct(productId, { active: false });
+export async function deleteProduct(productId: string, name = 'منتج', userId = ''): Promise<void> {
+  await updateProduct(productId, { active: false, name, userId });
 }

@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 
 import { getFirestoreDb } from '@/src/firebase/config';
+import { logOperation } from '@/src/features/audit/service';
 
 import type { Branch } from './types';
 
@@ -28,19 +29,22 @@ export function subscribeToBranches(callback: (branches: Branch[]) => void): () 
   });
 }
 
-export async function createBranch(name: string, order: number): Promise<void> {
-  await addDoc(collection(getFirestoreDb(), COLLECTION), {
+export async function createBranch(name: string, order: number, userId = ''): Promise<void> {
+  const docRef = await addDoc(collection(getFirestoreDb(), COLLECTION), {
     name,
     order,
     active: true,
     createdAt: new Date(),
   });
+  await logOperation({ action: 'create', entity: 'branch', entityId: docRef.id, label: name, userId });
 }
 
-export async function renameBranch(branchId: string, name: string): Promise<void> {
+export async function renameBranch(branchId: string, name: string, userId = ''): Promise<void> {
   await updateDoc(doc(getFirestoreDb(), COLLECTION, branchId), { name });
+  await logOperation({ action: 'update', entity: 'branch', entityId: branchId, label: name, userId });
 }
 
-export async function deleteBranch(branchId: string): Promise<void> {
+export async function deleteBranch(branchId: string, name = 'فرع', userId = ''): Promise<void> {
   await updateDoc(doc(getFirestoreDb(), COLLECTION, branchId), { active: false });
+  await logOperation({ action: 'delete', entity: 'branch', entityId: branchId, label: name, userId });
 }

@@ -29,5 +29,10 @@ service cloud.firestore {
     match /products/{productId} {
       allow read, write: if isAuthorized();
     }
+
+    match /operationLogs/{logId} {
+      allow read, create: if isAuthorized();
+      allow update, delete: if false;
+    }
   }
 }
