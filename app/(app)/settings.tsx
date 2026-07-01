@@ -1,0 +1,43 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router, Stack } from 'expo-router';
+import { Pressable, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { ThemeToggle } from '@/src/components/ThemeToggle';
+import { signOutUser } from '@/src/firebase/auth';
+
+export default function SettingsScreen() {
+  async function handleLogout() {
+    await signOutUser();
+    router.replace('/login');
+  }
+
+  return (
+    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
+      <Stack.Screen options={{ headerShown: true, title: 'الإعدادات', headerBackTitle: 'رجوع' }} />
+
+      <View className="px-5 py-4">
+        <Text className="mb-2 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
+          المظهر
+        </Text>
+        <ThemeToggle />
+
+        <Pressable
+          onPress={() => router.push('/branches')}
+          accessibilityRole="button"
+          className="mt-8 flex-row-reverse items-center justify-between rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark"
+        >
+          <Text className="font-cairo-medium text-base text-text-primary dark:text-text-primary-dark">
+            إدارة الفروع
+          </Text>
+          <Ionicons name="chevron-back" size={18} color="#7A6A5F" />
+        </Pressable>
+
+        <View className="mt-8">
+          <PrimaryButton label="تسجيل الخروج" onPress={handleLogout} variant="secondary" />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}

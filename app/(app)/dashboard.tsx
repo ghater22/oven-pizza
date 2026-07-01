@@ -1,20 +1,28 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { EmptyState } from '@/src/components/EmptyState';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
-import { ThemeToggle } from '@/src/components/ThemeToggle';
-import { signOutUser } from '@/src/firebase/auth';
+import { BranchSwitcher } from '@/src/components/BranchSwitcher';
+import { StatCard } from '@/src/components/StatCard';
+import { useDashboardSummary } from '@/src/hooks/useDashboardSummary';
+import { useBranchStore } from '@/src/store/branch';
+import { formatAmount } from '@/src/utils/currency';
 
 export default function DashboardScreen() {
-  async function handleLogout() {
-    try {
-      await signOutUser();
-    } finally {
-      router.replace('/login');
-    }
-  }
+  const { branches, summary, loading } = useDashboardSummary();
+  const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
+
+  const selectedTotals =
+    selectedBranchId === 'all'
+      ? { totalRevenue: summary.totalRevenue, totalExpense: summary.totalExpense, netProfit: summary.netProfit }
+      : (summary.byBranch.find((branch) => branch.branchId === selectedBranchId) ?? {
+          totalRevenue: 0,
+          totalExpense: 0,
+          netProfit: 0,
+        });
+
+  const bestBranch = branches.find((branch) => branch.id === summary.bestBranchId);
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
@@ -22,17 +30,80 @@ export default function DashboardScreen() {
         <Text className="font-cairo-bold text-xl text-text-primary dark:text-text-primary-dark">
           الرئيسية
         </Text>
-        <ThemeToggle />
+        <Pressable
+          onPress={() => router.push('/settings')}
+          accessibilityRole="button"
+          accessibilityLabel="الإعدادات"
+          className="h-10 w-10 items-center justify-center rounded-full bg-surface dark:bg-surface-dark"
+        >
+          <Ionicons name="settings-outline" size={20} color="#7A6A5F" />
+        </Pressable>
       </View>
 
-      <EmptyState
-        title="لوحة التحكم قيد الإعداد"
-        description="سيتم عرض دخل ومصروفات وأرباح اليوم ومقارنة الفروع هنا في السبرنت القادم."
-      />
+      <BranchSwitcher />
 
-      <View className="px-6 pb-6">
-        <PrimaryButton label="تسجيل الخروج" onPress={handleLogout} variant="secondary" />
-      </View>
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color="#D64535" size="large" />
+        </View>
+      ) : (
+        <ScrollView contentContainerClassName="px-5 pb-8">
+          <Text className="mb-3 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
+            اليوم
+          </Text>
+          <View className="flex-row-reverse gap-3">
+            <StatCard title="الدخل" value={selectedTotals.totalRevenue} icon="trending-up" tone="success" />
+            <StatCard title="المصروف" value={selectedTotals.totalExpense} icon="trending-down" tone="danger" />
+          </View>
+          <View className="mt-3">
+            <StatCard
+              title="صافي الربح"
+              value={selectedTotals.netProfit}
+              icon="wallet-outline"
+              tone={selectedTotals.netProfit >= 0 ? 'success' : 'danger'}
+            />
+          </View>
+
+          {branches.length > 1 ? (
+            <View className="mt-6">
+              <Text className="mb-3 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
+                مقارنة الفروع اليوم
+              </Text>
+              {summary.byBranch.map((branchTotals) => {
+                const branch = branches.find((item) => item.id === branchTotals.branchId);
+                const isBest = branchTotals.branchId === summary.bestBranchId;
+                return (
+                  <View
+                    key={branchTotals.branchId}
+                    className="mb-2 flex-row-reverse items-center justify-between rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark"
+                  >
+                    <View className="flex-row-reverse items-center gap-2">
+                      {isBest ? <Ionicons name="star" size={16} color="#F2A93B" /> : null}
+                      <Text className="font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
+                        {branch?.name ?? branchTotals.branchId}
+                      </Text>
+                    </View>
+                    <Text
+                      className={`font-cairo-semibold text-sm ${
+                        branchTotals.netProfit >= 0
+                          ? 'text-success dark:text-success-dark'
+                          : 'text-danger dark:text-danger-dark'
+                      }`}
+                    >
+                      {formatAmount(branchTotals.netProfit)}
+                    </Text>
+                  </View>
+                );
+              })}
+              {bestBranch ? (
+                <Text className="mt-1 text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">
+                  أفضل فرع أداءً اليوم: {bestBranch.name}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

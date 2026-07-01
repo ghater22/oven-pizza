@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { useColorScheme } from 'nativewind';
+
+import { useAuthStore } from '@/src/store/auth';
 
 const COLORS = {
   light: { active: '#D64535', inactive: '#7A6A5F', bg: '#FFFFFF', border: '#EDE0D4' },
@@ -10,6 +12,14 @@ const COLORS = {
 export default function AppLayout() {
   const { colorScheme } = useColorScheme();
   const palette = colorScheme === 'dark' ? COLORS.dark : COLORS.light;
+
+  const user = useAuthStore((state) => state.user);
+  const profile = useAuthStore((state) => state.profile);
+  const initializing = useAuthStore((state) => state.initializing);
+
+  if (!initializing && !(user && profile)) {
+    return <Redirect href="/login" />;
+  }
 
   return (
     <Tabs
@@ -64,6 +74,8 @@ export default function AppLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="settings" options={{ href: null }} />
+      <Tabs.Screen name="branches" options={{ href: null }} />
     </Tabs>
   );
 }

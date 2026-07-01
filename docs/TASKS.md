@@ -4,22 +4,27 @@
 
 ## Sprint 0
 - ✅ PROJECT_BRIEF.md, OWNER_REQUIREMENTS.md, UI_DESIGN.md, DATABASE_SCHEMA.md, FIREBASE_STRUCTURE.md, ANALYTICS_MODEL.md, ROADMAP.md, SPRINT_PLAN.md, TASKS.md
-- ⬜ إنشاء مشروع Expo (TypeScript template) + expo-router
-- ⬜ تثبيت: firebase, nativewind+tailwindcss, zustand, react-native-gifted-charts, expo-print, expo-sharing, xlsx, @expo-google-fonts/cairo, expo-file-system
-- ⬜ `src/firebase/config.ts` + `.env.example`
-- ⬜ `firestore.rules` + `firestore.indexes.json`
-- ⬜ ألوان الثيم (Light/Dark) + Tailwind config + خط Cairo + فرض RTL
-- ⬜ شعار SVG + أيقونات Expo (icon/adaptive-icon/splash)
-- ⬜ Root layout + auth guard + Bottom Tabs skeleton + شاشة تسجيل الدخول (UI)
-- ⬜ commit محلي: `feat(sprint-0): scaffold, docs, theme, firebase wiring`
+- ✅ إنشاء مشروع Expo (TypeScript template) + expo-router (تعديل: React Native/Expo بدل Flutter — Flutter/Java غير مثبَّتين على الجهاز، Expo يعمل فورًا ومجانًا)
+- ✅ تثبيت: firebase, nativewind+tailwindcss v3, zustand, react-native-gifted-charts, expo-print, expo-sharing, xlsx, @expo-google-fonts/cairo, expo-file-system, expo-splash-screen, @expo/vector-icons
+- ✅ `src/firebase/config.ts` (Auth+Firestore) + `src/firebase/auth.ts` + `.env.example`
+- ✅ `firestore.rules` + `firestore.indexes.json`
+- ✅ ألوان الثيم (Light/Dark) + Tailwind config + خط Cairo + فرض RTL (`src/utils/rtl.ts`, `src/store/theme.ts`)
+- ✅ شعار SVG (`design/logo.svg`) + توليد أيقونات Expo تلقائيًا (`scripts/generate-icons.js`)
+- ✅ Root layout + Bottom Tabs skeleton + شاشة تسجيل الدخول (مربوطة فعليًا بـ Firebase Auth، أبكر من المخطط)
+- ✅ commit محلي: `feat(sprint-0): scaffold app, docs, Firebase wiring, theme/RTL, nav skeleton`
+- ✅ تحقق بصري عبر متصفح: RTL، الخط، الألوان، تبديل الوضع الداكن، الشعار — كلها تعمل بشكل صحيح
 
 ## Sprint 1
-- ⬜ ربط شاشة الدخول بـ Firebase Auth فعليًا + معالجة الأخطاء بالعربية
-- ⬜ Zustand store: authUser, selectedBranchId, themeMode
-- ⬜ خدمة `branches` (fetch/create/update) + شاشة إدارة الفروع
-- ⬜ خدمة تجميع `Period Summary` + مكوّن `StatCard` + `BranchSwitcher`
-- ⬜ شاشة Dashboard كاملة (بدون الرؤى الذكية بعد)
-- ⬜ commit محلي
+- ✅ ربط شاشة الدخول بـ Firebase Auth فعليًا + معالجة الأخطاء بالعربية (أُنجز مبكرًا في السبرنت 0)
+- ✅ حارس مصادقة فعلي (`useAuthListener` + Zustand `authStore` + redirect في index/login/(app) layout)
+- ✅ Zustand store: `authStore` (user/profile/initializing/error) + `branchStore` (selectedBranchId محفوظ محليًا)
+- ✅ خدمة `branches` (fetch realtime/create/rename) + شاشة إدارة الفروع (`app/(app)/branches.tsx`)
+- ✅ خدمة تجميع `Period Summary` (`src/features/analytics/periodSummary.ts`) + مكوّن `StatCard` + `BranchSwitcher`
+- ✅ شاشة Dashboard كاملة لليوم الحالي (دخل/مصروف/ربح + مقارنة فروع + أفضل فرع) — بدون الرؤى الذكية بعد (السبرنت 6)
+- ✅ شاشة `settings` (تبديل الثيم + رابط إدارة الفروع + تسجيل الخروج)
+- ✅ إصلاح: تعطّل التطبيق بالكامل (شاشة بيضاء) عند عدم ضبط `.env` — الآن يظهر رسالة عربية واضحة بدل الانهيار
+- ✅ تحقق: `tsc --noEmit` و`eslint` بدون أخطاء + تحقق بصري عبر متصفح لحالة عدم الإعداد
+- ✅ commit محلي
 
 ## Sprint 2
 - ⬜ خدمة `revenues` (CRUD + realtime listener بحسب فرع/تاريخ)

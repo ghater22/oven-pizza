@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { useAuthListener } from '@/src/hooks/useAuthListener';
 import { useSyncTheme } from '@/src/hooks/useSyncTheme';
 import { ensureRTL } from '@/src/utils/rtl';
 
@@ -28,6 +29,7 @@ export default function RootLayout() {
   });
 
   useSyncTheme();
+  useAuthListener();
 
   useEffect(() => {
     if (fontsLoaded) {

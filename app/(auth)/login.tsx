@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 
@@ -6,33 +6,44 @@ import { AppTextInput } from '@/src/components/AppTextInput';
 import { PizzaOvenLogo } from '@/src/components/PizzaOvenLogo';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { getAuthErrorMessage, signIn } from '@/src/firebase/auth';
+import { useAuthStore } from '@/src/store/auth';
 
 export default function LoginScreen() {
+  const user = useAuthStore((state) => state.user);
+  const profile = useAuthStore((state) => state.profile);
+  const storeError = useAuthStore((state) => state.error);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  if (user && profile) {
+    return <Redirect href="/dashboard" />;
+  }
 
   async function handleSubmit() {
     if (!email.trim() || !password) {
-      setError('الرجاء إدخال البريد الإلكتروني وكلمة المرور');
+      setLocalError('الرجاء إدخال البريد الإلكتروني وكلمة المرور');
       return;
     }
 
-    setError(null);
+    setLocalError(null);
     setLoading(true);
     try {
       await signIn(email.trim(), password);
-      router.replace('/dashboard');
+      // التنقل يحدث تلقائيًا أعلاه بمجرد تأكيد وجود الملف الشخصي في authStore
     } catch (err) {
       const hasFirebaseCode = Boolean((err as { code?: string })?.code);
-      setError(
+      setLocalError(
         hasFirebaseCode ? getAuthErrorMessage(err) : ((err as Error)?.message ?? getAuthErrorMessage(err))
       );
     } finally {
       setLoading(false);
     }
   }
+
+  const error = localError ?? storeError;
 
   return (
     <KeyboardAvoidingView
