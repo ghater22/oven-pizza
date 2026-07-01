@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/src/components/EmptyState';
 import { PeriodSelector } from '@/src/components/PeriodSelector';
+import { TimeAnalyticsSection } from '@/src/components/TimeAnalyticsSection';
 import {
   aggregateProductPerformance,
   aggregateProductPerformanceByBranch,
@@ -109,10 +110,13 @@ export default function AnalyticsScreen() {
       <PeriodSelector value={period} onChange={setPeriod} />
 
       {subTab === 'time' ? (
-        <EmptyState
-          title="تحليل الأوقات"
-          description="أفضل وأضعف الساعات والأيام — قادم في السبرنت 5."
-        />
+        loading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator color="#D64535" size="large" />
+          </View>
+        ) : (
+          <TimeAnalyticsSection revenues={revenues} />
+        )
       ) : loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color="#D64535" size="large" />
