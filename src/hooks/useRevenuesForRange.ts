@@ -26,5 +26,5 @@ export function useRevenuesForRange(startDate: string, endDate: string) {
 
   const revenues = branches.flatMap((branch) => byBranch[branch.id] ?? []);
 
-  return { revenues, branches, loading: branchesLoading };
+  return { revenues, revenuesByBranch: byBranch, branches, loading: branchesLoading };
 }

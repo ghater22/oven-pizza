@@ -18,3 +18,34 @@ export function startOfWeek(date: Date): Date {
   result.setHours(0, 0, 0, 0);
   return result;
 }
+
+export function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+export type AnalyticsPeriod = 'today' | 'week' | 'month';
+
+export interface DateRange {
+  startDate: string;
+  endDate: string;
+}
+
+/** يُرجع مدى تاريخ (شامل الطرفين) لفترة تحليل شائعة، ينتهي دائمًا باليوم الحالي. */
+export function dateRangeForPeriod(period: AnalyticsPeriod): DateRange {
+  const now = new Date();
+  const endDate = toDateKey(now);
+
+  if (period === 'today') {
+    return { startDate: endDate, endDate };
+  }
+  if (period === 'week') {
+    return { startDate: toDateKey(startOfWeek(now)), endDate };
+  }
+  return { startDate: toDateKey(startOfMonth(now)), endDate };
+}
+
+export const PERIOD_LABELS: Record<AnalyticsPeriod, string> = {
+  today: 'اليوم',
+  week: 'هذا الأسبوع',
+  month: 'هذا الشهر',
+};
