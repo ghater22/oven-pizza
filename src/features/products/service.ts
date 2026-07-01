@@ -10,10 +10,12 @@ export function subscribeToProducts(callback: (products: Product[]) => void): ()
   const q = query(collection(getFirestoreDb(), COLLECTION), orderBy('name', 'asc'));
 
   return onSnapshot(q, (snapshot) => {
-    const products = snapshot.docs.map((docSnapshot) => ({
-      id: docSnapshot.id,
-      ...(docSnapshot.data() as Omit<Product, 'id'>),
-    }));
+    const products = snapshot.docs
+      .map((docSnapshot) => ({
+        id: docSnapshot.id,
+        ...(docSnapshot.data() as Omit<Product, 'id'>),
+      }))
+      .filter((product) => product.active !== false);
     callback(products);
   });
 }
@@ -36,4 +38,8 @@ export async function updateProduct(
   input: Partial<Pick<Product, 'name' | 'category' | 'price' | 'cost' | 'active'>>
 ): Promise<void> {
   await updateDoc(doc(getFirestoreDb(), COLLECTION, productId), input);
+}
+
+export async function deleteProduct(productId: string): Promise<void> {
+  await updateProduct(productId, { active: false });
 }

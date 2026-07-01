@@ -1,7 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, Text } from 'react-native';
 
+import { AppIcon } from './AppIcon';
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
@@ -85,7 +85,7 @@ export function PwaInstallButton() {
       accessibilityLabel="تثبيت التطبيق"
       className="mt-3 flex-row-reverse items-center justify-center rounded-2xl border border-primary bg-surface px-4 py-3 dark:border-primary-dark dark:bg-surface-dark"
     >
-      <Ionicons name="download-outline" size={18} color="#D64535" />
+      <AppIcon name="download" size={18} color="#D64535" />
       <Text className="mr-2 font-cairo-semibold text-sm text-primary dark:text-primary-dark">
         تثبيت التطبيق
       </Text>

@@ -128,7 +128,7 @@ export default function ReportsScreen() {
             <StatCard
               title="صافي الربح"
               value={netProfit}
-              icon="wallet-outline"
+              icon="wallet"
               tone={netProfit >= 0 ? 'success' : 'danger'}
             />
           </View>

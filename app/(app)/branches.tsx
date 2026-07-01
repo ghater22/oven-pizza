@@ -1,13 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppIcon } from '@/src/components/AppIcon';
 import { AppTextInput } from '@/src/components/AppTextInput';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
-import { createBranch, renameBranch } from '@/src/features/branches/service';
+import { createBranch, deleteBranch, renameBranch } from '@/src/features/branches/service';
 import { useBranches } from '@/src/hooks/useBranches';
+import { confirmAction } from '@/src/utils/confirmAction';
 
 export default function BranchesScreen() {
   const { branches, loading } = useBranches();
@@ -44,6 +45,17 @@ export default function BranchesScreen() {
     }
   }
 
+  function handleDeleteBranch(branchId: string, name: string) {
+    confirmAction('حذف الفرع', `هل تريد حذف فرع ${name}؟ ستبقى السجلات السابقة محفوظة.`, async () => {
+      setSaving(true);
+      try {
+        await deleteBranch(branchId);
+      } finally {
+        setSaving(false);
+      }
+    });
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
       <Stack.Screen options={{ headerShown: true, title: 'إدارة الفروع', headerBackTitle: 'رجوع' }} />
@@ -65,14 +77,14 @@ export default function BranchesScreen() {
                     <AppTextInput label="" value={editName} onChangeText={setEditName} />
                   </View>
                   <Pressable onPress={saveEditing} accessibilityRole="button" accessibilityLabel="حفظ">
-                    <Ionicons name="checkmark-circle" size={26} color="#3E8E4F" />
+                    <AppIcon name="check-circle" size={26} color="#3E8E4F" />
                   </Pressable>
                   <Pressable
                     onPress={() => setEditingId(null)}
                     accessibilityRole="button"
                     accessibilityLabel="إلغاء"
                   >
-                    <Ionicons name="close-circle" size={26} color="#B3261E" />
+                    <AppIcon name="close-circle" size={26} color="#B3261E" />
                   </Pressable>
                 </View>
               ) : (
@@ -80,13 +92,22 @@ export default function BranchesScreen() {
                   <Text className="font-cairo-medium text-base text-text-primary dark:text-text-primary-dark">
                     {branch.name}
                   </Text>
-                  <Pressable
-                    onPress={() => startEditing(branch.id, branch.name)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`تعديل ${branch.name}`}
-                  >
-                    <Ionicons name="create-outline" size={20} color="#7A6A5F" />
-                  </Pressable>
+                  <View className="flex-row-reverse items-center gap-3">
+                    <Pressable
+                      onPress={() => startEditing(branch.id, branch.name)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`تعديل ${branch.name}`}
+                    >
+                      <AppIcon name="edit" size={20} color="#7A6A5F" />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleDeleteBranch(branch.id, branch.name)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`حذف ${branch.name}`}
+                    >
+                      <AppIcon name="trash" size={20} color="#B3261E" />
+                    </Pressable>
+                  </View>
                 </>
               )}
             </View>

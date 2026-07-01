@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppIcon } from '@/src/components/AppIcon';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { PwaInstallButton } from '@/src/components/PwaInstallButton';
 import { ThemeToggle } from '@/src/components/ThemeToggle';
@@ -32,7 +32,7 @@ export default function SettingsScreen() {
           <Text className="font-cairo-medium text-base text-text-primary dark:text-text-primary-dark">
             إدارة الفروع
           </Text>
-          <Ionicons name="chevron-back" size={18} color="#7A6A5F" />
+          <AppIcon name="chevron-left" size={18} color="#7A6A5F" />
         </Pressable>
 
         <Pressable
@@ -43,7 +43,7 @@ export default function SettingsScreen() {
           <Text className="font-cairo-medium text-base text-text-primary dark:text-text-primary-dark">
             إدارة المنتجات
           </Text>
-          <Ionicons name="chevron-back" size={18} color="#7A6A5F" />
+          <AppIcon name="chevron-left" size={18} color="#7A6A5F" />
         </Pressable>
 
         <View className="mt-8 gap-3">

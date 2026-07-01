@@ -18,10 +18,12 @@ export function subscribeToBranches(callback: (branches: Branch[]) => void): () 
   const q = query(collection(getFirestoreDb(), COLLECTION), orderBy('order', 'asc'));
 
   return onSnapshot(q, (snapshot) => {
-    const branches = snapshot.docs.map((docSnapshot) => ({
-      id: docSnapshot.id,
-      ...(docSnapshot.data() as Omit<Branch, 'id'>),
-    }));
+    const branches = snapshot.docs
+      .map((docSnapshot) => ({
+        id: docSnapshot.id,
+        ...(docSnapshot.data() as Omit<Branch, 'id'>),
+      }))
+      .filter((branch) => branch.active !== false);
     callback(branches);
   });
 }
@@ -37,4 +39,8 @@ export async function createBranch(name: string, order: number): Promise<void> {
 
 export async function renameBranch(branchId: string, name: string): Promise<void> {
   await updateDoc(doc(getFirestoreDb(), COLLECTION, branchId), { name });
+}
+
+export async function deleteBranch(branchId: string): Promise<void> {
+  await updateDoc(doc(getFirestoreDb(), COLLECTION, branchId), { active: false });
 }

@@ -1,12 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Text, View } from 'react-native';
 
 import { formatAmount } from '@/src/utils/currency';
 
+import { AppIcon, type AppIconName } from './AppIcon';
+
 interface StatCardProps {
   title: string;
   value: number;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: AppIconName;
   tone?: 'neutral' | 'success' | 'danger';
 }
 
@@ -23,7 +24,7 @@ export function StatCard({ title, value, icon, tone = 'neutral' }: StatCardProps
         <Text className="font-cairo-medium text-xs text-text-secondary dark:text-text-secondary-dark">
           {title}
         </Text>
-        <Ionicons name={icon} size={18} color="#F2A93B" />
+        <AppIcon name={icon} size={18} color="#F2A93B" />
       </View>
       <Text className={`mt-2 text-right font-cairo-bold text-xl ${TONE_TEXT[tone]}`}>
         {formatAmount(value)}

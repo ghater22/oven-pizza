@@ -1,8 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -10,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppIcon } from '@/src/components/AppIcon';
 import { BranchSwitcher } from '@/src/components/BranchSwitcher';
 import { EmptyState } from '@/src/components/EmptyState';
 import { RevenueForm, type RevenueFormValues } from '@/src/components/RevenueForm';
@@ -24,6 +23,7 @@ import { useProducts } from '@/src/hooks/useProducts';
 import { useRevenuesForRange } from '@/src/hooks/useRevenuesForRange';
 import { useAuthStore } from '@/src/store/auth';
 import { useBranchStore } from '@/src/store/branch';
+import { confirmAction } from '@/src/utils/confirmAction';
 import { formatAmount } from '@/src/utils/currency';
 import { toDateKey } from '@/src/utils/date';
 
@@ -111,24 +111,17 @@ export default function RevenueScreen() {
 
   function confirmDelete() {
     if (!editingRevenue) return;
-    Alert.alert('حذف الإيراد', 'هل أنت متأكد من حذف هذا الإيراد؟', [
-      { text: 'إلغاء', style: 'cancel' },
-      {
-        text: 'حذف',
-        style: 'destructive',
-        onPress: async () => {
-          if (!editingRevenue) return;
-          setSaving(true);
-          try {
-            await deleteRevenue(editingRevenue.branchId, editingRevenue.id);
-            setMode('list');
-            setEditingRevenue(null);
-          } finally {
-            setSaving(false);
-          }
-        },
-      },
-    ]);
+    confirmAction('حذف الإيراد', 'هل أنت متأكد من حذف هذا الإيراد؟', async () => {
+      if (!editingRevenue) return;
+      setSaving(true);
+      try {
+        await deleteRevenue(editingRevenue.branchId, editingRevenue.id);
+        setMode('list');
+        setEditingRevenue(null);
+      } finally {
+        setSaving(false);
+      }
+    });
   }
 
   const defaultBranchId =
@@ -150,7 +143,7 @@ export default function RevenueScreen() {
             accessibilityLabel="إضافة إيراد"
             className="h-10 w-10 items-center justify-center rounded-full bg-primary dark:bg-primary-dark"
           >
-            <Ionicons name="add" size={22} color="#FFFFFF" />
+            <AppIcon name="add" size={22} color="#FFFFFF" />
           </Pressable>
         ) : null}
       </View>
@@ -161,13 +154,13 @@ export default function RevenueScreen() {
 
           <View className="flex-row-reverse items-center justify-between px-5 pb-3">
             <Pressable onPress={() => changeDay(-1)} accessibilityLabel="اليوم السابق">
-              <Ionicons name="chevron-forward" size={22} color="#7A6A5F" />
+              <AppIcon name="chevron-right" size={22} color="#7A6A5F" />
             </Pressable>
             <Text className="font-cairo-medium text-sm text-text-primary dark:text-text-primary-dark">
               {dateKey}
             </Text>
             <Pressable onPress={() => changeDay(1)} accessibilityLabel="اليوم التالي">
-              <Ionicons name="chevron-back" size={22} color="#7A6A5F" />
+              <AppIcon name="chevron-left" size={22} color="#7A6A5F" />
             </Pressable>
           </View>
 

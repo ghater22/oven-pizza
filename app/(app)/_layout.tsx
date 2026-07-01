@@ -1,7 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 
+import { AppIcon } from '@/src/components/AppIcon';
 import { useAuthStore } from '@/src/store/auth';
 
 const COLORS = {
@@ -35,7 +35,7 @@ export default function AppLayout() {
         name="dashboard"
         options={{
           title: 'الرئيسية',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <AppIcon name="home" color={String(color)} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -43,7 +43,7 @@ export default function AppLayout() {
         options={{
           title: 'الإيرادات',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="trending-up" color={color} size={size} />
+            <AppIcon name="trending-up" color={String(color)} size={size} />
           ),
         }}
       />
@@ -52,7 +52,7 @@ export default function AppLayout() {
         options={{
           title: 'المصروفات',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="trending-down" color={color} size={size} />
+            <AppIcon name="trending-down" color={String(color)} size={size} />
           ),
         }}
       />
@@ -61,7 +61,7 @@ export default function AppLayout() {
         options={{
           title: 'التحليلات',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="stats-chart" color={color} size={size} />
+            <AppIcon name="chart" color={String(color)} size={size} />
           ),
         }}
       />
@@ -70,7 +70,7 @@ export default function AppLayout() {
         options={{
           title: 'التقارير',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="document-text" color={color} size={size} />
+            <AppIcon name="document" color={String(color)} size={size} />
           ),
         }}
       />

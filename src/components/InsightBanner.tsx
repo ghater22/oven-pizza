@@ -1,16 +1,17 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Text, View } from 'react-native';
 
 import type { Insight } from '@/src/features/analytics/insights';
 
+import { AppIcon, type AppIconName } from './AppIcon';
+
 const TONE_STYLES: Record<
   Insight['tone'],
-  { text: string; border: string; icon: keyof typeof Ionicons.glyphMap; iconColor: string }
+  { text: string; border: string; icon: AppIconName; iconColor: string }
 > = {
   warning: {
     text: 'text-danger dark:text-danger-dark',
     border: 'border-danger dark:border-danger-dark',
-    icon: 'alert-circle',
+    icon: 'alert',
     iconColor: '#B3261E',
   },
   positive: {
@@ -22,7 +23,7 @@ const TONE_STYLES: Record<
   info: {
     text: 'text-text-primary dark:text-text-primary-dark',
     border: 'border-secondary dark:border-secondary-dark',
-    icon: 'information-circle',
+    icon: 'info',
     iconColor: '#F2A93B',
   },
 };
@@ -34,7 +35,7 @@ export function InsightBanner({ insight }: { insight: Insight }) {
     <View
       className={`mb-2 flex-row-reverse items-center gap-2 rounded-2xl border bg-surface p-3 dark:bg-surface-dark ${style.border}`}
     >
-      <Ionicons name={style.icon} size={18} color={style.iconColor} />
+      <AppIcon name={style.icon} size={18} color={style.iconColor} />
       <Text className={`flex-1 text-right font-cairo-medium text-sm ${style.text}`}>
         {insight.message}
       </Text>

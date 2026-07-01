@@ -1,14 +1,16 @@
 import { Stack } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppIcon } from '@/src/components/AppIcon';
 import { AppTextInput } from '@/src/components/AppTextInput';
 import { ChipSelector } from '@/src/components/ChipSelector';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
-import { createProduct } from '@/src/features/products/service';
-import { PRODUCT_CATEGORIES } from '@/src/features/products/types';
+import { createProduct, deleteProduct, updateProduct } from '@/src/features/products/service';
+import { PRODUCT_CATEGORIES, type Product } from '@/src/features/products/types';
 import { useProducts } from '@/src/hooks/useProducts';
+import { confirmAction } from '@/src/utils/confirmAction';
 import { formatAmount } from '@/src/utils/currency';
 
 export default function ProductsScreen() {
@@ -19,6 +21,7 @@ export default function ProductsScreen() {
   const [price, setPrice] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   async function handleAdd() {
     const priceNumber = Number(price);
@@ -30,14 +33,50 @@ export default function ProductsScreen() {
     setError(null);
     setSaving(true);
     try {
-      await createProduct({ name: name.trim(), category, price: priceNumber });
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, { name: name.trim(), category, price: priceNumber });
+      } else {
+        await createProduct({ name: name.trim(), category, price: priceNumber });
+      }
       setName('');
       setPrice('');
+      setCategory(PRODUCT_CATEGORIES[0]);
+      setEditingProduct(null);
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setSaving(false);
     }
+  }
+
+  function startEditing(product: Product) {
+    setEditingProduct(product);
+    setName(product.name);
+    setCategory(product.category);
+    setPrice(String(product.price));
+    setError(null);
+  }
+
+  function cancelEditing() {
+    setEditingProduct(null);
+    setName('');
+    setCategory(PRODUCT_CATEGORIES[0]);
+    setPrice('');
+    setError(null);
+  }
+
+  function handleDelete(product: Product) {
+    confirmAction('حذف المنتج', `هل تريد حذف ${product.name}؟ ستبقى السجلات السابقة محفوظة.`, async () => {
+      setSaving(true);
+      try {
+        await deleteProduct(product.id);
+        if (editingProduct?.id === product.id) {
+          cancelEditing();
+        }
+      } finally {
+        setSaving(false);
+      }
+    });
   }
 
   return (
@@ -63,15 +102,33 @@ export default function ProductsScreen() {
                   {product.category}
                 </Text>
               </View>
-              <Text className="font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
-                {formatAmount(product.price)}
-              </Text>
+              <View className="items-end gap-2">
+                <Text className="font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
+                  {formatAmount(product.price)}
+                </Text>
+                <View className="flex-row-reverse gap-3">
+                  <Pressable
+                    onPress={() => startEditing(product)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`تعديل ${product.name}`}
+                  >
+                    <AppIcon name="edit" size={20} color="#7A6A5F" />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => handleDelete(product)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`حذف ${product.name}`}
+                  >
+                    <AppIcon name="trash" size={20} color="#B3261E" />
+                  </Pressable>
+                </View>
+              </View>
             </View>
           ))}
 
           <View className="mt-6">
             <Text className="mb-3 font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
-              إضافة منتج جديد
+              {editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}
             </Text>
             <AppTextInput
               label="اسم المنتج"
@@ -97,7 +154,16 @@ export default function ProductsScreen() {
                 {error}
               </Text>
             ) : null}
-            <PrimaryButton label="إضافة المنتج" onPress={handleAdd} loading={saving} />
+            <PrimaryButton
+              label={editingProduct ? 'حفظ التعديلات' : 'إضافة المنتج'}
+              onPress={handleAdd}
+              loading={saving}
+            />
+            {editingProduct ? (
+              <View className="mt-3">
+                <PrimaryButton label="إلغاء التعديل" onPress={cancelEditing} variant="secondary" />
+              </View>
+            ) : null}
           </View>
         </ScrollView>
       )}

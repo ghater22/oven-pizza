@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppIcon } from '@/src/components/AppIcon';
 import { BranchSwitcher } from '@/src/components/BranchSwitcher';
 import { EmptyState } from '@/src/components/EmptyState';
 import { InsightBanner } from '@/src/components/InsightBanner';
@@ -41,7 +41,7 @@ export default function DashboardScreen() {
           accessibilityLabel="الإعدادات"
           className="h-10 w-10 items-center justify-center rounded-full bg-surface dark:bg-surface-dark"
         >
-          <Ionicons name="settings-outline" size={20} color="#7A6A5F" />
+          <AppIcon name="settings" size={20} color="#7A6A5F" />
         </Pressable>
       </View>
 
@@ -74,7 +74,7 @@ export default function DashboardScreen() {
             <StatCard
               title="صافي الربح"
               value={selectedTotals.netProfit}
-              icon="wallet-outline"
+              icon="wallet"
               tone={selectedTotals.netProfit >= 0 ? 'success' : 'danger'}
             />
           </View>
@@ -104,7 +104,7 @@ export default function DashboardScreen() {
                     className="mb-2 flex-row-reverse items-center justify-between rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark"
                   >
                     <View className="flex-row-reverse items-center gap-2">
-                      {isBest ? <Ionicons name="star" size={16} color="#F2A93B" /> : null}
+                      {isBest ? <AppIcon name="star" size={16} color="#F2A93B" /> : null}
                       <Text className="font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
                         {branch?.name ?? branchTotals.branchId}
                       </Text>
