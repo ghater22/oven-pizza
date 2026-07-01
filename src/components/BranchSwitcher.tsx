@@ -12,7 +12,8 @@ export function BranchSwitcher() {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerClassName="gap-2 px-5 pb-3"
+      className="max-h-16"
+      contentContainerClassName="h-14 items-center gap-2 px-5 pb-2"
     >
       {[{ id: 'all', name: 'كل الفروع' }, ...branches].map((option) => {
         const active = option.id === selectedBranchId;
@@ -22,13 +23,14 @@ export function BranchSwitcher() {
             onPress={() => setSelectedBranchId(option.id)}
             accessibilityRole="button"
             accessibilityLabel={option.name}
-            className={`rounded-full px-4 py-2 ${
+            className={`h-12 min-w-28 items-center justify-center rounded-xl px-4 ${
               active
                 ? 'bg-primary dark:bg-primary-dark'
                 : 'border border-border bg-surface dark:border-border-dark dark:bg-surface-dark'
             }`}
           >
             <Text
+              numberOfLines={1}
               className={`font-cairo-medium text-sm ${
                 active ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
               }`}

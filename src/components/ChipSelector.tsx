@@ -13,7 +13,7 @@ export function ChipSelector({ label, options, value, onChange }: ChipSelectorPr
       <Text className="mb-1.5 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
         {label}
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="max-h-14" contentContainerClassName="h-12 items-center gap-2">
         {options.map((option) => {
           const active = option === value;
           return (
@@ -22,13 +22,14 @@ export function ChipSelector({ label, options, value, onChange }: ChipSelectorPr
               onPress={() => onChange(option)}
               accessibilityRole="button"
               accessibilityLabel={option}
-              className={`rounded-full px-4 py-2 ${
+              className={`h-11 min-w-24 items-center justify-center rounded-xl px-4 ${
                 active
                   ? 'bg-primary dark:bg-primary-dark'
                   : 'border border-border bg-surface dark:border-border-dark dark:bg-surface-dark'
               }`}
             >
               <Text
+                numberOfLines={1}
                 className={`font-cairo-medium text-sm ${
                   active ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
                 }`}

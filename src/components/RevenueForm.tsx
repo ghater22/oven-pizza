@@ -57,8 +57,8 @@ export function RevenueForm({
       setError('الرجاء اختيار الفرع');
       return;
     }
-    if (!values.productId) {
-      setError('الرجاء اختيار المنتج');
+    if (!values.productName.trim()) {
+      setError('الرجاء إدخال اسم المنتج أو اختياره من القائمة');
       return;
     }
     if (!quantity || quantity <= 0) {
@@ -71,7 +71,11 @@ export function RevenueForm({
     }
 
     setError(null);
-    onSubmit(values);
+    onSubmit({
+      ...values,
+      productId: values.productId || 'manual',
+      productName: values.productName.trim(),
+    });
   }
 
   return (
@@ -79,21 +83,26 @@ export function RevenueForm({
       <Text className="mb-1.5 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
         الفرع
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 mb-4">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 max-h-14" contentContainerClassName="h-12 items-center gap-2">
         {branches.map((branch) => {
           const active = branch.id === values.branchId;
           return (
             <Pressable
               key={branch.id}
               onPress={() => setValues((prev) => ({ ...prev, branchId: branch.id }))}
-              className={`rounded-full px-4 py-2 ${
+              accessibilityRole="button"
+              accessibilityLabel={`اختيار ${branch.name}`}
+              className={`h-11 min-w-28 items-center justify-center rounded-xl px-4 ${
                 active
                   ? 'bg-primary dark:bg-primary-dark'
                   : 'border border-border bg-surface dark:border-border-dark dark:bg-surface-dark'
               }`}
             >
               <Text
-                className={`font-cairo-medium text-sm ${active ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'}`}
+                numberOfLines={1}
+                className={`font-cairo-medium text-sm ${
+                  active ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
+                }`}
               >
                 {branch.name}
               </Text>
@@ -105,28 +114,52 @@ export function RevenueForm({
       <Text className="mb-1.5 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
         المنتج
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 mb-4">
-        {products.map((product) => {
-          const active = product.id === values.productId;
-          return (
-            <Pressable
-              key={product.id}
-              onPress={() => selectProduct(product)}
-              className={`rounded-full px-4 py-2 ${
-                active
-                  ? 'bg-primary dark:bg-primary-dark'
-                  : 'border border-border bg-surface dark:border-border-dark dark:bg-surface-dark'
-              }`}
-            >
-              <Text
-                className={`font-cairo-medium text-sm ${active ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'}`}
+      {products.length > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 max-h-14" contentContainerClassName="h-12 items-center gap-2">
+          {products.map((product) => {
+            const active = product.id === values.productId;
+            return (
+              <Pressable
+                key={product.id}
+                onPress={() => selectProduct(product)}
+                accessibilityRole="button"
+                accessibilityLabel={`اختيار ${product.name}`}
+                className={`h-11 min-w-28 items-center justify-center rounded-xl px-4 ${
+                  active
+                    ? 'bg-primary dark:bg-primary-dark'
+                    : 'border border-border bg-surface dark:border-border-dark dark:bg-surface-dark'
+                }`}
               >
-                {product.name}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+                <Text
+                  numberOfLines={1}
+                  className={`font-cairo-medium text-sm ${
+                    active ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
+                  }`}
+                >
+                  {product.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : (
+        <Text className="mb-3 text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">
+          لا توجد منتجات محفوظة. يمكنك إدخال اسم المنتج يدوياً الآن.
+        </Text>
+      )}
+
+      <AppTextInput
+        label="اسم المنتج"
+        value={values.productName}
+        onChangeText={(text) =>
+          setValues((prev) => ({
+            ...prev,
+            productId: '',
+            productName: text,
+          }))
+        }
+        placeholder="مثال: بيتزا خضار"
+      />
 
       <View className="flex-row-reverse gap-3">
         <View className="flex-1">

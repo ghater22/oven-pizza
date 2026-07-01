@@ -57,20 +57,21 @@ export function ExpenseForm({
       <Text className="mb-1.5 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
         الفرع
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 mb-4">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 max-h-14" contentContainerClassName="h-12 items-center gap-2">
         {branches.map((branch) => {
           const active = branch.id === values.branchId;
           return (
             <Pressable
               key={branch.id}
               onPress={() => setValues((prev) => ({ ...prev, branchId: branch.id }))}
-              className={`rounded-full px-4 py-2 ${
+              className={`h-11 min-w-28 items-center justify-center rounded-xl px-4 ${
                 active
                   ? 'bg-primary dark:bg-primary-dark'
                   : 'border border-border bg-surface dark:border-border-dark dark:bg-surface-dark'
               }`}
             >
               <Text
+                numberOfLines={1}
                 className={`font-cairo-medium text-sm ${active ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'}`}
               >
                 {branch.name}
@@ -83,20 +84,21 @@ export function ExpenseForm({
       <Text className="mb-1.5 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
         التصنيف
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 mb-4">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 max-h-14" contentContainerClassName="h-12 items-center gap-2">
         {EXPENSE_CATEGORIES.map((category) => {
           const active = category === values.category;
           return (
             <Pressable
               key={category}
               onPress={() => setValues((prev) => ({ ...prev, category }))}
-              className={`rounded-full px-4 py-2 ${
+              className={`h-11 min-w-28 items-center justify-center rounded-xl px-4 ${
                 active
                   ? 'bg-primary dark:bg-primary-dark'
                   : 'border border-border bg-surface dark:border-border-dark dark:bg-surface-dark'
               }`}
             >
               <Text
+                numberOfLines={1}
                 className={`font-cairo-medium text-sm ${active ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'}`}
               >
                 {category}
