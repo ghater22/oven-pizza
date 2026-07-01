@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { PwaInstallButton } from '@/src/components/PwaInstallButton';
 import { ThemeToggle } from '@/src/components/ThemeToggle';
 import { signOutUser } from '@/src/firebase/auth';
 
@@ -45,7 +46,8 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-back" size={18} color="#7A6A5F" />
         </Pressable>
 
-        <View className="mt-8">
+        <View className="mt-8 gap-3">
+          <PwaInstallButton />
           <PrimaryButton label="تسجيل الخروج" onPress={handleLogout} variant="secondary" />
         </View>
       </View>

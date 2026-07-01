@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-na
 import { AppTextInput } from '@/src/components/AppTextInput';
 import { PizzaOvenLogo } from '@/src/components/PizzaOvenLogo';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { PwaInstallButton } from '@/src/components/PwaInstallButton';
 import { getAuthErrorMessage, signIn } from '@/src/firebase/auth';
 import { useAuthStore } from '@/src/store/auth';
 
@@ -86,6 +87,7 @@ export default function LoginScreen() {
         ) : null}
 
         <PrimaryButton label="تسجيل الدخول" onPress={handleSubmit} loading={loading} />
+        <PwaInstallButton />
       </ScrollView>
     </KeyboardAvoidingView>
   );

@@ -1,0 +1,21 @@
+{
+  "name": "بيتزا الفرن Oven Pizza",
+  "short_name": "بيتزا الفرن",
+  "description": "لوحة تحكم بيتزا الفرن لإدارة الإيرادات والمصروفات والتقارير.",
+  "dir": "rtl",
+  "lang": "ar",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FFF8F1",
+  "theme_color": "#D64535",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
