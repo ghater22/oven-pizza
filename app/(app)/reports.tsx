@@ -106,20 +106,24 @@ export default function ReportsScreen() {
         </Text>
       </View>
 
-      <BranchSwitcher />
-      <PeriodSelector value={period} onChange={setPeriod} />
-
       {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#D64535" size="large" />
-        </View>
+        <>
+          <BranchSwitcher />
+          <PeriodSelector value={period} onChange={setPeriod} />
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator color="#D64535" size="large" />
+          </View>
+        </>
       ) : !hasData ? (
         <EmptyState
           title="لا توجد بيانات لهذه الفترة"
           description="سجّل إيرادات أو مصروفات لعرض التقرير وتصديره."
         />
       ) : (
-        <ScrollView contentContainerClassName="px-5 pb-8">
+        <ScrollView contentContainerClassName="pb-36 pt-1">
+          <BranchSwitcher />
+          <PeriodSelector value={period} onChange={setPeriod} />
+          <View className="px-5">
           <View className="flex-row-reverse gap-3">
             <StatCard title="الدخل" value={totalRevenue} icon="trending-up" tone="success" />
             <StatCard title="المصروف" value={totalExpense} icon="trending-down" tone="danger" />
@@ -193,6 +197,7 @@ export default function ReportsScreen() {
                 variant="secondary"
               />
             </View>
+          </View>
           </View>
         </ScrollView>
       )}
