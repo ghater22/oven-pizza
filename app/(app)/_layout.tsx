@@ -27,15 +27,32 @@ export default function AppLayout() {
         headerShown: false,
         tabBarActiveTintColor: palette.active,
         tabBarInactiveTintColor: palette.inactive,
-        tabBarStyle: { backgroundColor: palette.bg, borderTopColor: palette.border },
-        tabBarLabelStyle: { fontFamily: 'Cairo_500Medium', fontSize: 11 },
+        tabBarStyle: {
+          backgroundColor: palette.bg,
+          borderTopColor: palette.border,
+          height: 58,
+          marginBottom: 14,
+          paddingTop: 4,
+          paddingBottom: 4,
+        },
+        tabBarItemStyle: { height: 50, paddingVertical: 0 },
+        tabBarIconStyle: { marginTop: 2, marginBottom: -2 },
+        tabBarLabelStyle: {
+          fontFamily: 'Cairo_500Medium',
+          fontSize: 10,
+          lineHeight: 13,
+          marginTop: -2,
+          marginBottom: 0,
+        },
       }}
     >
       <Tabs.Screen
         name="dashboard"
         options={{
           title: 'الرئيسية',
-          tabBarIcon: ({ color, size }) => <AppIcon name="home" color={String(color)} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <AppIcon name="home" color={String(color)} size={Math.min(size, 22)} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -43,7 +60,7 @@ export default function AppLayout() {
         options={{
           title: 'الإيرادات',
           tabBarIcon: ({ color, size }) => (
-            <AppIcon name="trending-up" color={String(color)} size={size} />
+            <AppIcon name="trending-up" color={String(color)} size={Math.min(size, 22)} />
           ),
         }}
       />
@@ -52,7 +69,7 @@ export default function AppLayout() {
         options={{
           title: 'المصروفات',
           tabBarIcon: ({ color, size }) => (
-            <AppIcon name="trending-down" color={String(color)} size={size} />
+            <AppIcon name="trending-down" color={String(color)} size={Math.min(size, 22)} />
           ),
         }}
       />
@@ -61,7 +78,7 @@ export default function AppLayout() {
         options={{
           title: 'التحليلات',
           tabBarIcon: ({ color, size }) => (
-            <AppIcon name="chart" color={String(color)} size={size} />
+            <AppIcon name="chart" color={String(color)} size={Math.min(size, 22)} />
           ),
         }}
       />
@@ -70,7 +87,7 @@ export default function AppLayout() {
         options={{
           title: 'التقارير',
           tabBarIcon: ({ color, size }) => (
-            <AppIcon name="document" color={String(color)} size={size} />
+            <AppIcon name="document" color={String(color)} size={Math.min(size, 22)} />
           ),
         }}
       />
