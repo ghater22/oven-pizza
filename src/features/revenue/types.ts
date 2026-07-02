@@ -11,4 +11,7 @@ export interface Revenue {
   timestamp: Date;
   note?: string;
   createdBy: string;
+  receiptName?: string;
+  receiptPath?: string;
+  receiptUrl?: string;
 }

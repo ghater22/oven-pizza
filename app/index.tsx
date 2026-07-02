@@ -17,7 +17,7 @@ export default function Index() {
   }
 
   if (user && profile) {
-    return <Redirect href="/dashboard" />;
+    return <Redirect href={profile.role === 'accountant' ? '/revenue' : '/dashboard'} />;
   }
 
   return <Redirect href="/login" />;

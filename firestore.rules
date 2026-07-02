@@ -13,6 +13,15 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'owner';
     }
 
+    function isAccountant() {
+      return isAuthorized() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'accountant';
+    }
+
+    function isInputRole() {
+      return isOwner() || isAccountant();
+    }
+
     match /users/{uid} {
       allow read: if request.auth != null && (request.auth.uid == uid || isOwner());
       allow create: if isOwner();
@@ -20,23 +29,28 @@ service cloud.firestore {
     }
 
     match /branches/{branchId} {
-      allow read, write: if isAuthorized();
+      allow read: if isAuthorized();
+      allow write: if isOwner();
 
       match /revenues/{revenueId} {
-        allow read, write: if isAuthorized();
+        allow read, update, delete: if isOwner();
+        allow create: if isInputRole();
       }
 
       match /expenses/{expenseId} {
-        allow read, write: if isAuthorized();
+        allow read, update, delete: if isOwner();
+        allow create: if isInputRole();
       }
     }
 
     match /products/{productId} {
-      allow read, write: if isAuthorized();
+      allow read: if isAuthorized();
+      allow write: if isOwner();
     }
 
     match /operationLogs/{logId} {
-      allow read, create: if isAuthorized();
+      allow read: if isOwner();
+      allow create: if isAuthorized();
       allow update, delete: if false;
     }
   }

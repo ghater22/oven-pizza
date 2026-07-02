@@ -33,4 +33,7 @@ export interface Expense {
   timestamp: Date;
   note?: string;
   createdBy: string;
+  receiptName?: string;
+  receiptPath?: string;
+  receiptUrl?: string;
 }

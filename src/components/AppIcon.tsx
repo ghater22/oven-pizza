@@ -12,6 +12,7 @@ export type AppIconName =
   | 'download'
   | 'edit'
   | 'home'
+  | 'image'
   | 'info'
   | 'settings'
   | 'star'
@@ -81,6 +82,13 @@ export function AppIcon({ name, size = 22, color = '#7A6A5F' }: AppIconProps) {
         <>
           <Path d="M3 11.5 12 4l9 7.5" {...common} />
           <Path d="M5 10.5V20h5v-5h4v5h5v-9.5" {...common} />
+        </>
+      ) : null}
+      {name === 'image' ? (
+        <>
+          <Rect x="4" y="5" width="16" height="14" rx="2.5" {...common} />
+          <Circle cx="9" cy="10" r="1.5" {...common} />
+          <Path d="M6.5 17 11 12.5l3 3 1.5-1.5 2 3" {...common} />
         </>
       ) : null}
       {name === 'trending-up' ? (

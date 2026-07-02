@@ -13,6 +13,7 @@ import {
 
 import { getFirestoreDb } from '@/src/firebase/config';
 import { toDateKey } from '@/src/utils/date';
+import { isAccountingDateClosed } from '@/src/utils/monthlyClose';
 import { logOperation } from '@/src/features/audit/service';
 
 import type { Revenue } from './types';
@@ -51,6 +52,9 @@ export function subscribeToRevenues(
         timestamp: (data.timestamp as Timestamp).toDate(),
         note: data.note,
         createdBy: data.createdBy,
+        receiptName: data.receiptName,
+        receiptPath: data.receiptPath,
+        receiptUrl: data.receiptUrl,
       } satisfies Revenue;
     });
     callback(revenues);
@@ -65,9 +69,16 @@ export interface RevenueInput {
   timestamp: Date;
   note?: string;
   createdBy: string;
+  receiptName?: string;
+  receiptPath?: string;
+  receiptUrl?: string;
 }
 
 export async function createRevenue(branchId: string, input: RevenueInput): Promise<void> {
+  if (isAccountingDateClosed(input.timestamp)) {
+    throw new Error('هذا الشهر مقفل محاسبيًا ولا يمكن إضافة عمليات له');
+  }
+
   const docRef = await addDoc(revenuesCollection(branchId), {
     productId: input.productId,
     productName: input.productName,
@@ -77,6 +88,9 @@ export async function createRevenue(branchId: string, input: RevenueInput): Prom
     date: toDateKey(input.timestamp),
     timestamp: Timestamp.fromDate(input.timestamp),
     note: input.note ?? null,
+    receiptName: input.receiptName ?? null,
+    receiptPath: input.receiptPath ?? null,
+    receiptUrl: input.receiptUrl ?? null,
     createdBy: input.createdBy,
     createdAt: Timestamp.now(),
   });
@@ -95,6 +109,10 @@ export async function updateRevenue(
   revenueId: string,
   input: Omit<RevenueInput, 'createdBy'>
 ): Promise<void> {
+  if (isAccountingDateClosed(input.timestamp)) {
+    throw new Error('هذا الشهر مقفل محاسبيًا ولا يمكن تعديل عملياته');
+  }
+
   await updateDoc(doc(revenuesCollection(branchId), revenueId), {
     productId: input.productId,
     productName: input.productName,
@@ -104,6 +122,9 @@ export async function updateRevenue(
     date: toDateKey(input.timestamp),
     timestamp: Timestamp.fromDate(input.timestamp),
     note: input.note ?? null,
+    receiptName: input.receiptName ?? null,
+    receiptPath: input.receiptPath ?? null,
+    receiptUrl: input.receiptUrl ?? null,
     updatedAt: Timestamp.now(),
   });
 }

@@ -5,14 +5,14 @@ import type { Revenue } from '@/src/features/revenue/types';
 
 import { useBranches } from './useBranches';
 
-export function useRevenuesForRange(startDate: string, endDate: string) {
+export function useRevenuesForRange(startDate: string, endDate: string, enabled = true) {
   const { branches, loading: branchesLoading } = useBranches();
   const [byBranch, setByBranch] = useState<Record<string, Revenue[]>>({});
 
   const branchIds = branches.map((branch) => branch.id).join(',');
 
   useEffect(() => {
-    if (branches.length === 0) return;
+    if (!enabled || branches.length === 0) return;
 
     const unsubscribes = branches.map((branch) =>
       subscribeToRevenues(branch.id, startDate, endDate, (revenues) => {
@@ -22,7 +22,7 @@ export function useRevenuesForRange(startDate: string, endDate: string) {
 
     return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branchIds, startDate, endDate]);
+  }, [branchIds, enabled, startDate, endDate]);
 
   const revenues = branches.flatMap((branch) => byBranch[branch.id] ?? []);
 

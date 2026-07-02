@@ -26,21 +26,27 @@ function emptyFormValues(defaultBranchId: string): ExpenseFormValues {
     category: EXPENSE_CATEGORIES[0],
     amount: '',
     note: '',
+    receiptName: undefined,
+    receiptPath: undefined,
+    receiptUrl: undefined,
   };
 }
 
 export default function ExpensesScreen() {
   const { branches } = useBranches();
   const uid = useAuthStore((state) => state.user?.uid ?? '');
+  const role = useAuthStore((state) => state.profile?.role);
+  const isAccountant = role === 'accountant';
   const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
 
   const [viewDate, setViewDate] = useState(new Date());
   const dateKey = toDateKey(viewDate);
-  const { expenses, loading } = useExpensesForRange(dateKey, dateKey);
+  const { expenses, loading } = useExpensesForRange(dateKey, dateKey, !isAccountant);
 
   const [mode, setMode] = useState<'list' | 'add' | 'edit'>('list');
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [saving, setSaving] = useState(false);
+  const [formVersion, setFormVersion] = useState(0);
 
   const visibleExpenses =
     selectedBranchId === 'all'
@@ -71,7 +77,11 @@ export default function ExpensesScreen() {
         timestamp: buildTimestamp(),
         note: values.note.trim() || undefined,
         createdBy: uid,
+        receiptName: values.receiptName,
+        receiptPath: values.receiptPath,
+        receiptUrl: values.receiptUrl,
       });
+      setFormVersion((value) => value + 1);
       setMode('list');
     } finally {
       setSaving(false);
@@ -87,6 +97,9 @@ export default function ExpensesScreen() {
         amount: Number(values.amount),
         timestamp: editingExpense.timestamp,
         note: values.note.trim() || undefined,
+        receiptName: values.receiptName,
+        receiptPath: values.receiptPath,
+        receiptUrl: values.receiptUrl,
       });
       setMode('list');
       setEditingExpense(null);
@@ -112,6 +125,30 @@ export default function ExpensesScreen() {
 
   const defaultBranchId =
     selectedBranchId !== 'all' ? selectedBranchId : (branches[0]?.id ?? '');
+
+  if (isAccountant) {
+    return (
+      <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
+        <View className="px-5 py-4">
+          <Text className="text-right font-cairo-bold text-xl text-text-primary dark:text-text-primary-dark">
+            إدخال المصروفات
+          </Text>
+        </View>
+        <ScrollView contentContainerClassName="px-5 pb-28 pt-2">
+          <ExpenseForm
+            key={formVersion}
+            branches={branches}
+            initialValues={emptyFormValues(defaultBranchId)}
+            submitLabel="حفظ المصروف اليومي"
+            saving={saving}
+            userId={uid}
+            onSubmit={handleAdd}
+            onCancel={() => setFormVersion((value) => value + 1)}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
@@ -207,11 +244,15 @@ export default function ExpensesScreen() {
                     category: editingExpense.category,
                     amount: String(editingExpense.amount),
                     note: editingExpense.note ?? '',
+                    receiptName: editingExpense.receiptName,
+                    receiptPath: editingExpense.receiptPath,
+                    receiptUrl: editingExpense.receiptUrl,
                   }
                 : emptyFormValues(defaultBranchId)
             }
             submitLabel={mode === 'edit' ? 'حفظ التعديلات' : 'إضافة المصروف'}
             saving={saving}
+            userId={uid}
             onSubmit={mode === 'edit' ? handleEdit : handleAdd}
             onCancel={() => {
               setMode('list');

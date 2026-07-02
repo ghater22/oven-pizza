@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { AppIcon } from '@/src/components/AppIcon';
+import { pickAndUploadReceipt } from '@/src/features/attachments/service';
 import type { Branch } from '@/src/features/branches/types';
 import type { Product } from '@/src/features/products/types';
 
@@ -14,6 +16,9 @@ export interface RevenueFormValues {
   quantity: string;
   unitPrice: string;
   note: string;
+  receiptName?: string;
+  receiptPath?: string;
+  receiptUrl?: string;
 }
 
 interface RevenueFormProps {
@@ -22,6 +27,7 @@ interface RevenueFormProps {
   initialValues: RevenueFormValues;
   submitLabel: string;
   saving: boolean;
+  userId: string;
   onSubmit: (values: RevenueFormValues) => void;
   onCancel: () => void;
   onDelete?: () => void;
@@ -33,12 +39,14 @@ export function RevenueForm({
   initialValues,
   submitLabel,
   saving,
+  userId,
   onSubmit,
   onCancel,
   onDelete,
 }: RevenueFormProps) {
   const [values, setValues] = useState(initialValues);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
   function selectProduct(product: Product) {
     setValues((prev) => ({
@@ -76,6 +84,30 @@ export function RevenueForm({
       productId: values.productId || 'manual',
       productName: values.productName.trim(),
     });
+  }
+
+  async function handlePickReceipt() {
+    if (!values.branchId) {
+      setError('الرجاء اختيار الفرع قبل رفع الفاتورة');
+      return;
+    }
+
+    setUploadingReceipt(true);
+    setError(null);
+    try {
+      const receipt = await pickAndUploadReceipt({
+        branchId: values.branchId,
+        recordType: 'revenues',
+        userId,
+      });
+      if (receipt) {
+        setValues((prev) => ({ ...prev, ...receipt }));
+      }
+    } catch {
+      setError('تعذر رفع صورة الفاتورة، حاول مرة أخرى');
+    } finally {
+      setUploadingReceipt(false);
+    }
   }
 
   return (
@@ -185,6 +217,25 @@ export function RevenueForm({
         value={values.note}
         onChangeText={(text) => setValues((prev) => ({ ...prev, note: text }))}
       />
+
+      <Pressable
+        onPress={handlePickReceipt}
+        disabled={saving || uploadingReceipt}
+        accessibilityRole="button"
+        accessibilityLabel="رفع صورة فاتورة"
+        className="mb-3 flex-row-reverse items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 dark:border-border-dark dark:bg-surface-dark"
+      >
+        <AppIcon name="image" size={20} color={values.receiptUrl ? '#4E9F6E' : '#7A6A5F'} />
+        <Text className="font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
+          {uploadingReceipt ? 'جاري رفع الفاتورة...' : values.receiptUrl ? 'تم رفع صورة الفاتورة' : 'رفع صورة فاتورة'}
+        </Text>
+      </Pressable>
+
+      {values.receiptName ? (
+        <Text className="mb-3 text-center font-cairo text-xs text-success dark:text-success-dark">
+          {values.receiptName}
+        </Text>
+      ) : null}
 
       {error ? (
         <Text className="mb-3 text-center font-cairo text-sm text-danger dark:text-danger-dark">

@@ -35,6 +35,9 @@ function emptyFormValues(defaultBranchId: string): RevenueFormValues {
     quantity: '1',
     unitPrice: '',
     note: '',
+    receiptName: undefined,
+    receiptPath: undefined,
+    receiptUrl: undefined,
   };
 }
 
@@ -42,16 +45,19 @@ export default function RevenueScreen() {
   const { branches } = useBranches();
   const { products } = useProducts();
   const uid = useAuthStore((state) => state.user?.uid ?? '');
+  const role = useAuthStore((state) => state.profile?.role);
+  const isAccountant = role === 'accountant';
   const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
 
   const [viewDate, setViewDate] = useState(new Date());
   const dateKey = toDateKey(viewDate);
-  const { revenues, loading } = useRevenuesForRange(dateKey, dateKey);
+  const { revenues, loading } = useRevenuesForRange(dateKey, dateKey, !isAccountant);
 
   const [mode, setMode] = useState<'list' | 'add' | 'edit'>('list');
   const [editingRevenue, setEditingRevenue] = useState<Revenue | null>(null);
   const [saving, setSaving] = useState(false);
   const [quickQuantity, setQuickQuantity] = useState(1);
+  const [formVersion, setFormVersion] = useState(0);
 
   const visibleRevenues =
     selectedBranchId === 'all'
@@ -84,7 +90,11 @@ export default function RevenueScreen() {
         timestamp: buildTimestamp(),
         note: values.note.trim() || undefined,
         createdBy: uid,
+        receiptName: values.receiptName,
+        receiptPath: values.receiptPath,
+        receiptUrl: values.receiptUrl,
       });
+      setFormVersion((value) => value + 1);
       setMode('list');
     } finally {
       setSaving(false);
@@ -121,6 +131,9 @@ export default function RevenueScreen() {
         unitPrice: Number(values.unitPrice),
         timestamp: editingRevenue.timestamp,
         note: values.note.trim() || undefined,
+        receiptName: values.receiptName,
+        receiptPath: values.receiptPath,
+        receiptUrl: values.receiptUrl,
       });
       setMode('list');
       setEditingRevenue(null);
@@ -146,6 +159,31 @@ export default function RevenueScreen() {
 
   const defaultBranchId =
     selectedBranchId !== 'all' ? selectedBranchId : (branches[0]?.id ?? '');
+
+  if (isAccountant) {
+    return (
+      <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
+        <View className="px-5 py-4">
+          <Text className="text-right font-cairo-bold text-xl text-text-primary dark:text-text-primary-dark">
+            إدخال الإيرادات
+          </Text>
+        </View>
+        <ScrollView contentContainerClassName="px-5 pb-28 pt-2">
+          <RevenueForm
+            key={formVersion}
+            branches={branches}
+            products={products}
+            initialValues={emptyFormValues(defaultBranchId)}
+            submitLabel="حفظ الإيراد اليومي"
+            saving={saving}
+            userId={uid}
+            onSubmit={handleAdd}
+            onCancel={() => setFormVersion((value) => value + 1)}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
@@ -301,11 +339,15 @@ export default function RevenueScreen() {
                     quantity: String(editingRevenue.quantity),
                     unitPrice: String(editingRevenue.unitPrice),
                     note: editingRevenue.note ?? '',
+                    receiptName: editingRevenue.receiptName,
+                    receiptPath: editingRevenue.receiptPath,
+                    receiptUrl: editingRevenue.receiptUrl,
                   }
                 : emptyFormValues(defaultBranchId)
             }
             submitLabel={mode === 'edit' ? 'حفظ التعديلات' : 'إضافة الإيراد'}
             saving={saving}
+            userId={uid}
             onSubmit={mode === 'edit' ? handleEdit : handleAdd}
             onCancel={() => {
               setMode('list');

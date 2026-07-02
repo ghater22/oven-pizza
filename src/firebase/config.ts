@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type FirebaseApp, getApps, initializeApp } from 'firebase/app';
 import { type Auth, getAuth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
 import { type Firestore, initializeFirestore } from 'firebase/firestore';
+import { type FirebaseStorage, getStorage } from 'firebase/storage';
 import { Platform } from 'react-native';
 
 const firebaseConfig = {
@@ -28,6 +29,7 @@ function assertConfigured() {
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
+let storage: FirebaseStorage;
 
 export function getFirebaseApp(): FirebaseApp {
   if (!app) {
@@ -54,4 +56,11 @@ export function getFirestoreDb(): Firestore {
     db = initializeFirestore(getFirebaseApp(), {});
   }
   return db;
+}
+
+export function getFirebaseStorage(): FirebaseStorage {
+  if (!storage) {
+    storage = getStorage(getFirebaseApp());
+  }
+  return storage;
 }

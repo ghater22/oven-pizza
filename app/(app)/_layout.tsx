@@ -1,4 +1,4 @@
-import { Redirect, Tabs } from 'expo-router';
+import { Redirect, Tabs, useSegments } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 
 import { AppIcon } from '@/src/components/AppIcon';
@@ -12,13 +12,20 @@ const COLORS = {
 export default function AppLayout() {
   const { colorScheme } = useColorScheme();
   const palette = colorScheme === 'dark' ? COLORS.dark : COLORS.light;
+  const segments = useSegments();
 
   const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
   const initializing = useAuthStore((state) => state.initializing);
+  const isAccountant = profile?.role === 'accountant';
+  const currentRoute = String(segments[segments.length - 1] ?? '');
 
   if (!initializing && !(user && profile)) {
     return <Redirect href="/login" />;
+  }
+
+  if (isAccountant && currentRoute && !['revenue', 'expenses'].includes(currentRoute)) {
+    return <Redirect href="/revenue" />;
   }
 
   return (
@@ -30,11 +37,12 @@ export default function AppLayout() {
         tabBarStyle: {
           backgroundColor: palette.bg,
           borderTopColor: palette.border,
-          height: 58,
-          marginBottom: 14,
+          height: 60,
+          marginBottom: 26,
           paddingTop: 4,
-          paddingBottom: 4,
+          paddingBottom: 6,
         },
+        sceneStyle: { paddingBottom: 96 },
         tabBarItemStyle: { height: 50, paddingVertical: 0 },
         tabBarIconStyle: { marginTop: 2, marginBottom: -2 },
         tabBarLabelStyle: {
@@ -50,6 +58,7 @@ export default function AppLayout() {
         name="dashboard"
         options={{
           title: 'الرئيسية',
+          href: isAccountant ? null : undefined,
           tabBarIcon: ({ color, size }) => (
             <AppIcon name="home" color={String(color)} size={Math.min(size, 22)} />
           ),
@@ -77,6 +86,7 @@ export default function AppLayout() {
         name="analytics"
         options={{
           title: 'التحليلات',
+          href: isAccountant ? null : undefined,
           tabBarIcon: ({ color, size }) => (
             <AppIcon name="chart" color={String(color)} size={Math.min(size, 22)} />
           ),
@@ -86,6 +96,7 @@ export default function AppLayout() {
         name="reports"
         options={{
           title: 'التقارير',
+          href: isAccountant ? null : undefined,
           tabBarIcon: ({ color, size }) => (
             <AppIcon name="document" color={String(color)} size={Math.min(size, 22)} />
           ),
