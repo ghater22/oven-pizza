@@ -173,6 +173,69 @@ export default function RevenueScreen() {
         </View>
         <AccountantProfileBar />
         <ScrollView contentContainerClassName="px-5 pb-28 pt-2">
+          {products.length > 0 && defaultBranchId ? (
+            <View className="mb-4 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+              <View className="mb-3 flex-row-reverse items-center justify-between">
+                <View className="flex-row-reverse items-center gap-2">
+                  <View className="h-9 w-9 items-center justify-center rounded-full bg-secondary/20 dark:bg-secondary-dark/20">
+                    <AppIcon name="zap" size={19} color="#D64535" />
+                  </View>
+                  <Text className="font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
+                    البيع السريع
+                  </Text>
+                </View>
+                <View className="flex-row-reverse items-center gap-2">
+                  <Pressable
+                    onPress={() => setQuickQuantity((value) => Math.max(1, value - 1))}
+                    accessibilityRole="button"
+                    accessibilityLabel="تقليل الكمية"
+                    className="h-9 w-9 items-center justify-center rounded-xl border border-border bg-background dark:border-border-dark dark:bg-background-dark"
+                  >
+                    <Text className="font-cairo-bold text-lg text-text-primary dark:text-text-primary-dark">-</Text>
+                  </Pressable>
+                  <Text className="w-8 text-center font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
+                    {quickQuantity}
+                  </Text>
+                  <Pressable
+                    onPress={() => setQuickQuantity((value) => value + 1)}
+                    accessibilityRole="button"
+                    accessibilityLabel="زيادة الكمية"
+                    className="h-9 w-9 items-center justify-center rounded-xl border border-border bg-background dark:border-border-dark dark:bg-background-dark"
+                  >
+                    <Text className="font-cairo-bold text-lg text-text-primary dark:text-text-primary-dark">+</Text>
+                  </Pressable>
+                </View>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="max-h-16"
+                contentContainerClassName="h-14 items-center gap-2"
+              >
+                {products.map((product) => (
+                  <Pressable
+                    key={product.id}
+                    onPress={() => handleQuickSale(product.id)}
+                    disabled={saving}
+                    accessibilityRole="button"
+                    accessibilityLabel={`بيع سريع ${product.name}`}
+                    className="h-12 min-w-32 items-center justify-center rounded-xl bg-secondary px-4 dark:bg-secondary-dark"
+                  >
+                    <Text numberOfLines={1} className="font-cairo-semibold text-sm text-text-primary">
+                      {product.name}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          ) : (
+            <View className="mb-4 flex-row-reverse items-center gap-2 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+              <AppIcon name="zap" size={19} color="#D64535" />
+              <Text className="flex-1 text-right font-cairo text-sm text-text-secondary dark:text-text-secondary-dark">
+                أضف المنتجات من حساب المالك لتظهر هنا كأزرار بيع سريع للمحاسب.
+              </Text>
+            </View>
+          )}
           <RevenueForm
             key={formVersion}
             branches={branches}

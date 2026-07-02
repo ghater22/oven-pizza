@@ -48,6 +48,7 @@ export default function ExpensesScreen() {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [saving, setSaving] = useState(false);
   const [formVersion, setFormVersion] = useState(0);
+  const [quickExpenseCategory, setQuickExpenseCategory] = useState(EXPENSE_CATEGORIES[0]);
 
   const visibleExpenses =
     selectedBranchId === 'all'
@@ -139,10 +140,55 @@ export default function ExpensesScreen() {
         </View>
         <AccountantProfileBar />
         <ScrollView contentContainerClassName="px-5 pb-28 pt-2">
+          <View className="mb-4 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+            <View className="mb-3 flex-row-reverse items-center gap-2">
+              <View className="h-9 w-9 items-center justify-center rounded-full bg-secondary/20 dark:bg-secondary-dark/20">
+                <AppIcon name="zap" size={19} color="#D64535" />
+              </View>
+              <Text className="font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
+                إدخال سريع للمصروفات
+              </Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="max-h-16"
+              contentContainerClassName="h-14 items-center gap-2"
+            >
+              {EXPENSE_CATEGORIES.map((category) => {
+                const active = category === quickExpenseCategory;
+                return (
+                  <Pressable
+                    key={category}
+                    onPress={() => {
+                      setQuickExpenseCategory(category);
+                      setFormVersion((value) => value + 1);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`اختيار سريع ${category}`}
+                    className={`h-12 min-w-32 items-center justify-center rounded-xl px-4 ${
+                      active
+                        ? 'bg-primary dark:bg-primary-dark'
+                        : 'border border-border bg-background dark:border-border-dark dark:bg-background-dark'
+                    }`}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      className={`font-cairo-semibold text-sm ${
+                        active ? 'text-white' : 'text-text-primary dark:text-text-primary-dark'
+                      }`}
+                    >
+                      {category}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
           <ExpenseForm
-            key={formVersion}
+            key={`${formVersion}-${quickExpenseCategory}`}
             branches={branches}
-            initialValues={emptyFormValues(defaultBranchId)}
+            initialValues={{ ...emptyFormValues(defaultBranchId), category: quickExpenseCategory }}
             submitLabel="حفظ المصروف اليومي"
             saving={saving}
             userId={uid}

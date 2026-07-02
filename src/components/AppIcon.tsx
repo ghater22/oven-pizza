@@ -21,7 +21,8 @@ export type AppIconName =
   | 'trending-down'
   | 'trending-up'
   | 'user'
-  | 'wallet';
+  | 'wallet'
+  | 'zap';
 
 interface AppIconProps {
   name: AppIconName;
@@ -167,6 +168,7 @@ export function AppIcon({ name, size = 22, color = '#7A6A5F' }: AppIconProps) {
           <Path d="M5 19h14" {...common} />
         </>
       ) : null}
+      {name === 'zap' ? <Path d="M13 2 4 14h7l-1 8 9-12h-7z" {...common} /> : null}
     </Svg>
   );
 }
