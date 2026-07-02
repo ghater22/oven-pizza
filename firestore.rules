@@ -31,7 +31,7 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if request.auth != null && (request.auth.uid == uid || isOwner());
       allow create: if isOwner();
-      allow update, delete: if false;
+      allow update, delete: if isOwner() && request.auth.uid != uid;
     }
 
     match /branches/{branchId} {

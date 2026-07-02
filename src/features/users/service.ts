@@ -1,10 +1,36 @@
-import { doc, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 
 import { logOperation } from '@/src/features/audit/service';
-import type { UserRole } from '@/src/features/auth/types';
+import type { AppUserProfile, UserRole } from '@/src/features/auth/types';
 import { getFirestoreDb } from '@/src/firebase/config';
 
 const API_KEY = process.env.EXPO_PUBLIC_FIREBASE_API_KEY;
+
+export interface ManagedUser extends AppUserProfile {
+  createdAt?: Date;
+  createdBy?: string;
+}
+
+export function subscribeToManagedUsers(callback: (users: ManagedUser[]) => void): () => void {
+  return onSnapshot(collection(getFirestoreDb(), 'users'), (snapshot) => {
+    const users = snapshot.docs
+      .map((docSnapshot) => {
+        const data = docSnapshot.data();
+        return {
+          uid: docSnapshot.id,
+          email: data.email ?? null,
+          displayName: data.displayName ?? null,
+          role: (data.role as UserRole) ?? 'accountant',
+          branchIds: Array.isArray(data.branchIds) ? (data.branchIds as string[]) : [],
+          createdAt: data.createdAt?.toDate?.() ?? undefined,
+          createdBy: data.createdBy,
+        } satisfies ManagedUser;
+      })
+      .sort((a, b) => (a.displayName ?? a.email ?? '').localeCompare(b.displayName ?? b.email ?? ''));
+
+    callback(users);
+  });
+}
 
 export async function createManagedUser(input: {
   email: string;
@@ -49,5 +75,41 @@ export async function createManagedUser(input: {
     entityId: data.localId,
     label: input.email,
     userId: input.createdBy,
+  });
+}
+
+export async function updateManagedUser(input: {
+  uid: string;
+  displayName: string;
+  role: UserRole;
+  branchIds?: string[];
+  updatedBy: string;
+}): Promise<void> {
+  await updateDoc(doc(getFirestoreDb(), 'users', input.uid), {
+    displayName: input.displayName,
+    role: input.role,
+    branchIds: input.role === 'accountant' ? (input.branchIds ?? []) : [],
+    updatedAt: new Date(),
+    updatedBy: input.updatedBy,
+  });
+
+  await logOperation({
+    action: 'update',
+    entity: 'user',
+    entityId: input.uid,
+    label: input.displayName,
+    userId: input.updatedBy,
+  });
+}
+
+export async function deleteManagedUser(uid: string, label: string, deletedBy: string): Promise<void> {
+  await deleteDoc(doc(getFirestoreDb(), 'users', uid));
+
+  await logOperation({
+    action: 'delete',
+    entity: 'user',
+    entityId: uid,
+    label,
+    userId: deletedBy,
   });
 }
