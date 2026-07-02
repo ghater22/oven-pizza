@@ -70,7 +70,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
 async function compressImageAsDataUrl(file: File): Promise<string> {
   const dataUrl = await readFileAsDataUrl(file);
   const image = await loadImage(dataUrl);
-  const maxSide = 1100;
+  const maxSide = 900;
   const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
   const width = Math.max(1, Math.round(image.width * scale));
   const height = Math.max(1, Math.round(image.height * scale));
@@ -83,7 +83,15 @@ async function compressImageAsDataUrl(file: File): Promise<string> {
   if (!context) return dataUrl;
 
   context.drawImage(image, 0, 0, width, height);
-  return canvas.toDataURL('image/jpeg', 0.68);
+
+  let quality = 0.58;
+  let compressed = canvas.toDataURL('image/jpeg', quality);
+  while (compressed.length > 850_000 && quality > 0.34) {
+    quality -= 0.08;
+    compressed = canvas.toDataURL('image/jpeg', quality);
+  }
+
+  return compressed;
 }
 
 export async function pickAndUploadReceipt({

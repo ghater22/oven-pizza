@@ -16,6 +16,23 @@ export interface ReportProductRow {
   totalRevenue: number;
 }
 
+export interface ReportRevenueRow {
+  date: string;
+  branchName: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface ReportExpenseRow {
+  date: string;
+  branchName: string;
+  category: string;
+  amount: number;
+  note?: string;
+}
+
 export interface ReportData {
   title: string;
   periodLabel: string;
@@ -28,4 +45,6 @@ export interface ReportData {
   branchTotals: ReportBranchTotal[];
   expenseBreakdown: ReportExpenseCategory[];
   topProducts: ReportProductRow[];
+  revenueRows: ReportRevenueRow[];
+  expenseRows: ReportExpenseRow[];
 }

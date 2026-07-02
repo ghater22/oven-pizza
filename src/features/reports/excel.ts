@@ -1,18 +1,46 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 import * as XLSX from 'xlsx';
 
 import type { ReportData } from './types';
 
-export async function exportReportAsExcel(data: ReportData): Promise<void> {
-  const workbook = XLSX.utils.book_new();
+function safeFileName(data: ReportData): string {
+  return `${data.title}-${data.startDate}-${data.endDate}`.replace(/[^\p{L}\p{N}._-]+/gu, '-');
+}
 
+function appendSheets(workbook: XLSX.WorkBook, data: ReportData) {
   const summarySheet = XLSX.utils.json_to_sheet([
     { البند: 'الدخل', المبلغ: data.totalRevenue },
     { البند: 'المصروف', المبلغ: data.totalExpense },
     { البند: 'صافي الربح', المبلغ: data.netProfit },
+    { البند: 'الفترة', المبلغ: `${data.startDate} - ${data.endDate}` },
+    { البند: 'الفرع', المبلغ: data.branchLabel },
   ]);
   XLSX.utils.book_append_sheet(workbook, summarySheet, 'الملخص');
+
+  const revenueSheet = XLSX.utils.json_to_sheet(
+    data.revenueRows.map((row) => ({
+      التاريخ: row.date,
+      الفرع: row.branchName,
+      المنتج: row.productName,
+      الكمية: row.quantity,
+      'سعر الوحدة': row.unitPrice,
+      الإجمالي: row.total,
+    }))
+  );
+  XLSX.utils.book_append_sheet(workbook, revenueSheet, 'تفاصيل الإيرادات');
+
+  const expenseDetailsSheet = XLSX.utils.json_to_sheet(
+    data.expenseRows.map((row) => ({
+      التاريخ: row.date,
+      الفرع: row.branchName,
+      التصنيف: row.category,
+      الملاحظة: row.note ?? '',
+      المبلغ: row.amount,
+    }))
+  );
+  XLSX.utils.book_append_sheet(workbook, expenseDetailsSheet, 'تفاصيل المصروفات');
 
   if (data.branchTotals.length > 1) {
     const branchSheet = XLSX.utils.json_to_sheet(
@@ -30,7 +58,7 @@ export async function exportReportAsExcel(data: ReportData): Promise<void> {
     const expenseSheet = XLSX.utils.json_to_sheet(
       data.expenseBreakdown.map((row) => ({ التصنيف: row.category, المبلغ: row.total }))
     );
-    XLSX.utils.book_append_sheet(workbook, expenseSheet, 'المصروفات');
+    XLSX.utils.book_append_sheet(workbook, expenseSheet, 'تصنيف المصروفات');
   }
 
   if (data.topProducts.length > 0) {
@@ -41,11 +69,42 @@ export async function exportReportAsExcel(data: ReportData): Promise<void> {
         الإيراد: row.totalRevenue,
       }))
     );
-    XLSX.utils.book_append_sheet(workbook, productSheet, 'المنتجات');
+    XLSX.utils.book_append_sheet(workbook, productSheet, 'أفضل المنتجات');
+  }
+}
+
+function downloadWorkbookOnWeb(workbook: XLSX.WorkBook, fileName: string): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    throw new Error('متصفح الويب غير متاح للتصدير.');
+  }
+
+  const output = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
+  const blob = new Blob([output], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${fileName}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+export async function exportReportAsExcel(data: ReportData): Promise<void> {
+  const workbook = XLSX.utils.book_new();
+  appendSheets(workbook, data);
+
+  const fileName = safeFileName(data);
+
+  if (Platform.OS === 'web') {
+    downloadWorkbookOnWeb(workbook, fileName);
+    return;
   }
 
   const base64 = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
-  const fileUri = `${FileSystem.cacheDirectory}${data.title.replace(/\s+/g, '-')}.xlsx`;
+  const fileUri = `${FileSystem.cacheDirectory}${fileName}.xlsx`;
 
   await FileSystem.writeAsStringAsync(fileUri, base64, {
     encoding: FileSystem.EncodingType.Base64,
