@@ -42,7 +42,7 @@ export default function AppLayout() {
           paddingTop: 4,
           paddingBottom: 6,
         },
-        sceneStyle: { paddingBottom: 96 },
+        sceneStyle: { backgroundColor: palette.bg },
         tabBarItemStyle: { height: 50, paddingVertical: 0 },
         tabBarIconStyle: { marginTop: 2, marginBottom: -2 },
         tabBarLabelStyle: {

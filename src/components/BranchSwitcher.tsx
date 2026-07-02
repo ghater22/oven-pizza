@@ -4,19 +4,21 @@ import { useBranches } from '@/src/hooks/useBranches';
 import { useAuthStore } from '@/src/store/auth';
 import { useBranchStore } from '@/src/store/branch';
 
+const ALL_BRANCHES_LABEL = '\u0643\u0644 \u0627\u0644\u0641\u0631\u0648\u0639';
+
 export function BranchSwitcher() {
   const { branches } = useBranches();
   const isAccountant = useAuthStore((state) => state.profile?.role === 'accountant');
   const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
   const setSelectedBranchId = useBranchStore((state) => state.setSelectedBranchId);
-  const options = isAccountant ? branches : [{ id: 'all', name: 'كل الفروع' }, ...branches];
+  const options = isAccountant ? branches : [{ id: 'all', name: ALL_BRANCHES_LABEL }, ...branches];
 
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      className="mb-2 max-h-14"
-      contentContainerClassName="h-12 items-center gap-2 px-5"
+      className="mb-4 h-14"
+      contentContainerClassName="h-14 items-center gap-2 px-5"
     >
       {options.map((option) => {
         const active = option.id === selectedBranchId;

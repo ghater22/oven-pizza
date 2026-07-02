@@ -19,16 +19,16 @@ const TONE_TEXT: Record<NonNullable<StatCardProps['tone']>, string> = {
 
 export function StatCard({ title, value, icon, tone = 'neutral' }: StatCardProps) {
   return (
-    <View className="min-h-32 flex-1 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
-      <View className="flex-row-reverse items-center justify-between">
-        <Text numberOfLines={1} className="flex-1 text-right font-cairo-medium text-xs text-text-secondary dark:text-text-secondary-dark">
+    <View className="min-h-28 flex-1 justify-between rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+      <View className="flex-row-reverse items-start justify-between gap-3">
+        <Text numberOfLines={1} className="flex-1 text-right font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
           {title}
         </Text>
-        <View className="mr-2 h-6 w-6 items-center justify-center">
-          <AppIcon name={icon} size={18} color="#F2A93B" />
+        <View className="h-8 w-8 items-center justify-center rounded-xl bg-secondary/10 dark:bg-secondary-dark/10">
+          <AppIcon name={icon} size={20} color="#F2A93B" />
         </View>
       </View>
-      <Text className={`mt-2 text-right font-cairo-bold text-xl ${TONE_TEXT[tone]}`}>
+      <Text className={`mt-4 text-right font-cairo-bold text-2xl ${TONE_TEXT[tone]}`}>
         {formatAmount(value)}
       </Text>
     </View>

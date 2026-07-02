@@ -69,8 +69,8 @@ export default function DashboardScreen() {
           </View>
         </View>
       ) : (
-        <ScrollView contentContainerClassName="px-5 pb-8">
-          <Text className="mb-3 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
+        <ScrollView contentContainerClassName="px-5 pb-36 pt-1">
+          <Text className="mb-3 text-right font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
             اليوم
           </Text>
           <View className="flex-row-reverse gap-3">
