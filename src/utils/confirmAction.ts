@@ -14,16 +14,23 @@ export function confirmAction(title: string, message: string, onConfirm: () => v
   ]);
 }
 
-export function confirmSaveAction(title: string, message: string, onConfirm: () => void | Promise<void>) {
+export function confirmSaveAction(
+  title: string,
+  message: string,
+  onConfirm: () => void | Promise<void>,
+  onCancel?: () => void
+) {
   if (Platform.OS === 'web') {
     if (typeof globalThis.confirm === 'function' && globalThis.confirm(`${title}\n\n${message}`)) {
       void onConfirm();
+    } else {
+      onCancel?.();
     }
     return;
   }
 
   Alert.alert(title, message, [
-    { text: 'إلغاء', style: 'cancel' },
+    { text: 'إلغاء', style: 'cancel', onPress: onCancel },
     { text: 'اعتماد الحفظ', onPress: () => void onConfirm() },
   ]);
 }

@@ -58,6 +58,7 @@ export default function RevenueScreen() {
   const [editingRevenue, setEditingRevenue] = useState<Revenue | null>(null);
   const [saving, setSaving] = useState(false);
   const [quickQuantity, setQuickQuantity] = useState(1);
+  const [selectedQuickProductId, setSelectedQuickProductId] = useState<string | null>(null);
   const [formVersion, setFormVersion] = useState(0);
 
   const visibleRevenues =
@@ -106,6 +107,7 @@ export default function RevenueScreen() {
     const product = products.find((item) => item.id === productId);
     if (!product || !defaultBranchId) return;
     const branch = branches.find((item) => item.id === defaultBranchId);
+    setSelectedQuickProductId(product.id);
 
     confirmSaveAction(
       'مراجعة البيع السريع',
@@ -129,8 +131,10 @@ export default function RevenueScreen() {
           });
         } finally {
           setSaving(false);
+          setSelectedQuickProductId(null);
         }
-      }
+      },
+      () => setSelectedQuickProductId(null)
     );
   }
 
@@ -225,20 +229,29 @@ export default function RevenueScreen() {
                 className="max-h-16"
                 contentContainerClassName="h-14 items-center gap-2"
               >
-                {products.map((product) => (
-                  <Pressable
-                    key={product.id}
-                    onPress={() => handleQuickSale(product.id)}
-                    disabled={saving}
-                    accessibilityRole="button"
-                    accessibilityLabel={`بيع سريع ${product.name}`}
-                    className="h-12 min-w-32 items-center justify-center rounded-xl bg-secondary px-4 dark:bg-secondary-dark"
-                  >
-                    <Text numberOfLines={1} className="font-cairo-semibold text-sm text-text-primary">
-                      {product.name}
-                    </Text>
-                  </Pressable>
-                ))}
+                {products.map((product) => {
+                  const selected = selectedQuickProductId === product.id;
+                  return (
+                    <Pressable
+                      key={product.id}
+                      onPress={() => handleQuickSale(product.id)}
+                      disabled={saving}
+                      accessibilityRole="button"
+                      accessibilityLabel={`بيع سريع ${product.name}`}
+                      className={`h-12 min-w-32 flex-row-reverse items-center justify-center gap-2 rounded-xl px-4 ${
+                        selected ? 'bg-primary dark:bg-primary-dark' : 'bg-secondary dark:bg-secondary-dark'
+                      }`}
+                    >
+                      {selected ? <AppIcon name="check-circle" size={15} color="#FFFFFF" /> : null}
+                      <Text
+                        numberOfLines={1}
+                        className={`font-cairo-semibold text-sm ${selected ? 'text-white' : 'text-text-primary'}`}
+                      >
+                        {product.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </ScrollView>
             </View>
           ) : (
@@ -319,20 +332,29 @@ export default function RevenueScreen() {
                 </View>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="max-h-16" contentContainerClassName="h-14 items-center gap-2">
-                {products.map((product) => (
-                  <Pressable
-                    key={product.id}
-                    onPress={() => handleQuickSale(product.id)}
-                    disabled={saving}
-                    accessibilityRole="button"
-                    accessibilityLabel={`بيع ${product.name}`}
-                    className="h-12 min-w-32 items-center justify-center rounded-xl bg-secondary px-4 dark:bg-secondary-dark"
-                  >
-                    <Text numberOfLines={1} className="font-cairo-semibold text-sm text-text-primary">
-                      {product.name}
-                    </Text>
-                  </Pressable>
-                ))}
+                {products.map((product) => {
+                  const selected = selectedQuickProductId === product.id;
+                  return (
+                    <Pressable
+                      key={product.id}
+                      onPress={() => handleQuickSale(product.id)}
+                      disabled={saving}
+                      accessibilityRole="button"
+                      accessibilityLabel={`بيع سريع ${product.name}`}
+                      className={`h-12 min-w-32 flex-row-reverse items-center justify-center gap-2 rounded-xl px-4 ${
+                        selected ? 'bg-primary dark:bg-primary-dark' : 'bg-secondary dark:bg-secondary-dark'
+                      }`}
+                    >
+                      {selected ? <AppIcon name="check-circle" size={15} color="#FFFFFF" /> : null}
+                      <Text
+                        numberOfLines={1}
+                        className={`font-cairo-semibold text-sm ${selected ? 'text-white' : 'text-text-primary'}`}
+                      >
+                        {product.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </ScrollView>
             </View>
           ) : (
