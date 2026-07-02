@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppIcon } from '@/src/components/AppIcon';
+import { AccountantProfileBar } from '@/src/components/AccountantProfileBar';
 import { BranchSwitcher } from '@/src/components/BranchSwitcher';
 import { EmptyState } from '@/src/components/EmptyState';
 import { ExpenseForm, type ExpenseFormValues } from '@/src/components/ExpenseForm';
@@ -136,6 +137,7 @@ export default function ExpensesScreen() {
             إدخال المصروفات
           </Text>
         </View>
+        <AccountantProfileBar />
         <ScrollView contentContainerClassName="px-5 pb-28 pt-2">
           <ExpenseForm
             key={formVersion}

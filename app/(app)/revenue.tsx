@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppIcon } from '@/src/components/AppIcon';
+import { AccountantProfileBar } from '@/src/components/AccountantProfileBar';
 import { BranchSwitcher } from '@/src/components/BranchSwitcher';
 import { EmptyState } from '@/src/components/EmptyState';
 import { RevenueForm, type RevenueFormValues } from '@/src/components/RevenueForm';
@@ -170,6 +171,7 @@ export default function RevenueScreen() {
             إدخال الإيرادات
           </Text>
         </View>
+        <AccountantProfileBar />
         <ScrollView contentContainerClassName="px-5 pb-28 pt-2">
           <RevenueForm
             key={formVersion}

@@ -14,11 +14,13 @@ export type AppIconName =
   | 'home'
   | 'image'
   | 'info'
+  | 'log-out'
   | 'settings'
   | 'star'
   | 'trash'
   | 'trending-down'
   | 'trending-up'
+  | 'user'
   | 'wallet';
 
 interface AppIconProps {
@@ -143,6 +145,19 @@ export function AppIcon({ name, size = 22, color = '#7A6A5F' }: AppIconProps) {
           <Circle cx="12" cy="12" r="9" {...common} />
           <Line x1="12" y1="11" x2="12" y2="17" {...common} />
           <Line x1="12" y1="7" x2="12.01" y2="7" {...common} />
+        </>
+      ) : null}
+      {name === 'user' ? (
+        <>
+          <Circle cx="12" cy="8" r="4" {...common} />
+          <Path d="M4 21a8 8 0 0 1 16 0" {...common} />
+        </>
+      ) : null}
+      {name === 'log-out' ? (
+        <>
+          <Path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4" {...common} />
+          <Path d="M14 8l4 4-4 4" {...common} />
+          <Line x1="18" y1="12" x2="9" y2="12" {...common} />
         </>
       ) : null}
       {name === 'download' ? (
