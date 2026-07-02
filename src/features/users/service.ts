@@ -10,6 +10,7 @@ export async function createManagedUser(input: {
   email: string;
   password: string;
   role: UserRole;
+  branchIds?: string[];
   displayName: string;
   createdBy: string;
 }): Promise<void> {
@@ -37,6 +38,7 @@ export async function createManagedUser(input: {
     email: input.email,
     displayName: input.displayName,
     role: input.role,
+    branchIds: input.role === 'accountant' ? (input.branchIds ?? []) : [],
     createdAt: new Date(),
     createdBy: input.createdBy,
   });

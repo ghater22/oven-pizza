@@ -5,4 +5,5 @@ export interface AppUserProfile {
   email: string | null;
   displayName: string | null;
   role: UserRole;
+  branchIds?: string[];
 }

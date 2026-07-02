@@ -24,5 +24,6 @@ export async function fetchUserProfile(
     email,
     displayName,
     role: (data.role as UserRole) ?? 'owner',
+    branchIds: Array.isArray(data.branchIds) ? (data.branchIds as string[]) : [],
   };
 }

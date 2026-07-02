@@ -158,7 +158,9 @@ export default function RevenueScreen() {
   }
 
   const defaultBranchId =
-    selectedBranchId !== 'all' ? selectedBranchId : (branches[0]?.id ?? '');
+    selectedBranchId !== 'all' && branches.some((branch) => branch.id === selectedBranchId)
+      ? selectedBranchId
+      : (branches[0]?.id ?? '');
 
   if (isAccountant) {
     return (
