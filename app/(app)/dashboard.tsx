@@ -51,9 +51,6 @@ export default function DashboardScreen() {
           <AppIcon name="settings" size={20} color="#7A6A5F" />
         </Pressable>
       </View>
-
-      <BranchSwitcher />
-
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color="#D64535" size="large" />
@@ -69,7 +66,9 @@ export default function DashboardScreen() {
           </View>
         </View>
       ) : (
-        <ScrollView contentContainerClassName="px-5 pb-36 pt-1">
+        <ScrollView contentContainerClassName="pb-36 pt-1">
+          <BranchSwitcher />
+          <View className="px-5">
           <Text className="mb-3 text-right font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
             اليوم
           </Text>
@@ -162,6 +161,7 @@ export default function DashboardScreen() {
               ) : null}
             </View>
           ) : null}
+          </View>
         </ScrollView>
       )}
     </SafeAreaView>
