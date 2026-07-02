@@ -16,6 +16,20 @@ export interface ReportProductRow {
   totalRevenue: number;
 }
 
+export interface ReportProductCategoryTotal {
+  category: string;
+  totalQuantity: number;
+  totalRevenue: number;
+}
+
+export interface ReportDailyTrendRow {
+  date: string;
+  totalRevenue: number;
+  totalExpense: number;
+  netProfit: number;
+  totalQuantity: number;
+}
+
 export interface ReportRevenueRow {
   date: string;
   branchName: string;
@@ -42,9 +56,18 @@ export interface ReportData {
   totalRevenue: number;
   totalExpense: number;
   netProfit: number;
+  totalSoldQuantity: number;
+  pizzaSoldQuantity: number;
+  drinkSoldQuantity: number;
+  sauceSoldQuantity: number;
+  averageRevenueTicket: number;
+  revenueCount: number;
+  expenseCount: number;
   branchTotals: ReportBranchTotal[];
   expenseBreakdown: ReportExpenseCategory[];
   topProducts: ReportProductRow[];
+  productCategoryTotals: ReportProductCategoryTotal[];
+  dailyTrend: ReportDailyTrendRow[];
   revenueRows: ReportRevenueRow[];
   expenseRows: ReportExpenseRow[];
 }

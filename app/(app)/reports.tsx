@@ -26,9 +26,34 @@ import { formatAmount } from '@/src/utils/currency';
 import { type AnalyticsPeriod, dateRangeForPeriod, PERIOD_LABELS } from '@/src/utils/date';
 
 type DeleteTarget = 'revenues' | 'expenses' | 'all';
+type ReportProductKind = 'pizza' | 'drink' | 'sauce' | 'other';
 
 const ALL_BRANCHES_LABEL = 'كل الفروع';
 const REPORT_TITLE = 'تقرير بيتزا الفرن';
+const PRODUCT_KIND_LABELS: Record<ReportProductKind, string> = {
+  pizza: 'البيتزا',
+  drink: 'المشروبات',
+  sauce: 'الصوصات',
+  other: 'أخرى',
+};
+
+function classifyProductKind(productName: string, productCategory?: string): ReportProductKind {
+  const value = `${productName} ${productCategory ?? ''}`.toLowerCase();
+  if (value.includes('صوص') || value.includes('sauce')) return 'sauce';
+  if (
+    value.includes('مشروب') ||
+    value.includes('مشروبات') ||
+    value.includes('غازي') ||
+    value.includes('بيبسي') ||
+    value.includes('كولا') ||
+    value.includes('ماء') ||
+    value.includes('drink')
+  ) {
+    return 'drink';
+  }
+  if (value.includes('بيتزا') || value.includes('ببتزا') || value.includes('pizza')) return 'pizza';
+  return 'other';
+}
 
 export default function ReportsScreen() {
   const [period, setPeriod] = useState<AnalyticsPeriod>('week');
@@ -57,6 +82,8 @@ export default function ReportsScreen() {
   const totalRevenue = scopedRevenues.reduce((sum, r) => sum + r.total, 0);
   const totalExpense = scopedExpenses.reduce((sum, e) => sum + e.amount, 0);
   const netProfit = totalRevenue - totalExpense;
+  const totalSoldQuantity = scopedRevenues.reduce((sum, revenue) => sum + revenue.quantity, 0);
+  const averageRevenueTicket = scopedRevenues.length > 0 ? totalRevenue / scopedRevenues.length : 0;
 
   const branchTotals = branches.map((branch) => {
     const totalBranchRevenue = revenues
@@ -80,6 +107,44 @@ export default function ReportsScreen() {
     totalQuantity: item.totalQuantity,
     totalRevenue: item.totalRevenue,
   }));
+  const productCategoryBuckets: Record<ReportProductKind, { totalQuantity: number; totalRevenue: number }> = {
+    pizza: { totalQuantity: 0, totalRevenue: 0 },
+    drink: { totalQuantity: 0, totalRevenue: 0 },
+    sauce: { totalQuantity: 0, totalRevenue: 0 },
+    other: { totalQuantity: 0, totalRevenue: 0 },
+  };
+  for (const revenue of scopedRevenues) {
+    const product = products.find((item) => item.id === revenue.productId);
+    const kind = classifyProductKind(revenue.productName, product?.category);
+    productCategoryBuckets[kind].totalQuantity += revenue.quantity;
+    productCategoryBuckets[kind].totalRevenue += revenue.total;
+  }
+  const productCategoryTotals = (Object.keys(productCategoryBuckets) as ReportProductKind[]).map((kind) => ({
+    category: PRODUCT_KIND_LABELS[kind],
+    totalQuantity: productCategoryBuckets[kind].totalQuantity,
+    totalRevenue: productCategoryBuckets[kind].totalRevenue,
+  }));
+  const trendByDate = new Map<string, { totalRevenue: number; totalExpense: number; totalQuantity: number }>();
+  for (const revenue of scopedRevenues) {
+    const entry = trendByDate.get(revenue.date) ?? { totalRevenue: 0, totalExpense: 0, totalQuantity: 0 };
+    entry.totalRevenue += revenue.total;
+    entry.totalQuantity += revenue.quantity;
+    trendByDate.set(revenue.date, entry);
+  }
+  for (const expense of scopedExpenses) {
+    const entry = trendByDate.get(expense.date) ?? { totalRevenue: 0, totalExpense: 0, totalQuantity: 0 };
+    entry.totalExpense += expense.amount;
+    trendByDate.set(expense.date, entry);
+  }
+  const dailyTrend = Array.from(trendByDate.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, entry]) => ({
+      date,
+      totalRevenue: entry.totalRevenue,
+      totalExpense: entry.totalExpense,
+      netProfit: entry.totalRevenue - entry.totalExpense,
+      totalQuantity: entry.totalQuantity,
+    }));
 
   const branchLabel =
     selectedBranchId === 'all' ? ALL_BRANCHES_LABEL : (branches.find((b) => b.id === selectedBranchId)?.name ?? '');
@@ -93,9 +158,18 @@ export default function ReportsScreen() {
     totalRevenue,
     totalExpense,
     netProfit,
+    totalSoldQuantity,
+    pizzaSoldQuantity: productCategoryBuckets.pizza.totalQuantity,
+    drinkSoldQuantity: productCategoryBuckets.drink.totalQuantity,
+    sauceSoldQuantity: productCategoryBuckets.sauce.totalQuantity,
+    averageRevenueTicket,
+    revenueCount: scopedRevenues.length,
+    expenseCount: scopedExpenses.length,
     branchTotals: selectedBranchId === 'all' ? branchTotals : [],
     expenseBreakdown,
     topProducts,
+    productCategoryTotals,
+    dailyTrend,
     revenueRows: scopedRevenues.map((revenue) => ({
       date: revenue.date,
       branchName: branchNameFor(revenue.branchId),
@@ -204,6 +278,43 @@ export default function ReportsScreen() {
                 tone={netProfit >= 0 ? 'success' : 'danger'}
               />
             </View>
+
+            <View className="mt-4 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+              <Text className="mb-3 text-right font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
+                ملخص الكميات
+              </Text>
+              <View className="flex-row-reverse flex-wrap gap-2">
+                <QuantityPill label="إجمالي المنتجات" value={totalSoldQuantity} tone="primary" />
+                <QuantityPill label="إجمالي البيتزا" value={productCategoryBuckets.pizza.totalQuantity} tone="success" />
+                <QuantityPill label="إجمالي المشروبات" value={productCategoryBuckets.drink.totalQuantity} tone="info" />
+                <QuantityPill label="إجمالي الصوصات" value={productCategoryBuckets.sauce.totalQuantity} tone="danger" />
+              </View>
+              <View className="mt-4 flex-row-reverse justify-between gap-2">
+                <MetricItem label="عدد الإيرادات" value={String(scopedRevenues.length)} />
+                <MetricItem label="عدد المصروفات" value={String(scopedExpenses.length)} />
+                <MetricItem label="متوسط الفاتورة" value={formatAmount(averageRevenueTicket)} />
+              </View>
+            </View>
+
+            {dailyTrend.length > 0 ? (
+              <View className="mt-4 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+                <Text className="mb-3 text-right font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
+                  اتجاه المبيعات حسب الفترة
+                </Text>
+                <TrendBars rows={dailyTrend} />
+              </View>
+            ) : null}
+
+            {productCategoryTotals.some((row) => row.totalQuantity > 0) ? (
+              <View className="mt-4 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+                <Text className="mb-3 text-right font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
+                  توزيع الكميات حسب النوع
+                </Text>
+                {productCategoryTotals.map((row) => (
+                  <CategoryBar key={row.category} label={row.category} value={row.totalQuantity} max={totalSoldQuantity} />
+                ))}
+              </View>
+            ) : null}
 
             {expenseBreakdown.length > 0 ? (
               <>
@@ -327,5 +438,84 @@ function DeleteButton({
       {loading ? <ActivityIndicator color="#A93025" /> : <AppIcon name="trash" size={20} color="#A93025" />}
       <Text className="font-cairo-semibold text-sm text-danger dark:text-danger-dark">{label}</Text>
     </Pressable>
+  );
+}
+
+function QuantityPill({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: 'primary' | 'success' | 'info' | 'danger';
+}) {
+  const toneClass =
+    tone === 'success'
+      ? 'border-success'
+      : tone === 'danger'
+        ? 'border-danger'
+        : tone === 'info'
+          ? 'border-secondary'
+          : 'border-primary';
+  return (
+    <View className={`min-w-[47%] flex-1 rounded-xl border ${toneClass} px-3 py-2`}>
+      <Text className="text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">{label}</Text>
+      <Text className="mt-1 text-right font-cairo-bold text-lg text-text-primary dark:text-text-primary-dark">
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function MetricItem({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="flex-1 rounded-xl bg-background px-2 py-2 dark:bg-background-dark">
+      <Text className="text-center font-cairo text-[11px] text-text-secondary dark:text-text-secondary-dark">
+        {label}
+      </Text>
+      <Text className="mt-1 text-center font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function CategoryBar({ label, value, max }: { label: string; value: number; max: number }) {
+  const width = max > 0 ? Math.max(6, Math.round((value / max) * 100)) : 0;
+  return (
+    <View className="mb-3">
+      <View className="mb-1 flex-row-reverse items-center justify-between">
+        <Text className="font-cairo-medium text-xs text-text-primary dark:text-text-primary-dark">{label}</Text>
+        <Text className="font-cairo-semibold text-xs text-text-secondary dark:text-text-secondary-dark">{value}</Text>
+      </View>
+      <View className="h-2 overflow-hidden rounded-full bg-background dark:bg-background-dark">
+        <View className="h-2 rounded-full bg-primary dark:bg-primary-dark" style={{ width: `${width}%` }} />
+      </View>
+    </View>
+  );
+}
+
+function TrendBars({ rows }: { rows: ReportData['dailyTrend'] }) {
+  const max = Math.max(...rows.map((row) => row.totalRevenue), 1);
+  return (
+    <View className="gap-2">
+      {rows.slice(-10).map((row) => {
+        const width = Math.max(5, Math.round((row.totalRevenue / max) * 100));
+        return (
+          <View key={row.date}>
+            <View className="mb-1 flex-row-reverse items-center justify-between">
+              <Text className="font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">{row.date}</Text>
+              <Text className="font-cairo-semibold text-xs text-success dark:text-success-dark">
+                {formatAmount(row.totalRevenue)}
+              </Text>
+            </View>
+            <View className="h-2 overflow-hidden rounded-full bg-background dark:bg-background-dark">
+              <View className="h-2 rounded-full bg-success dark:bg-success-dark" style={{ width: `${width}%` }} />
+            </View>
+          </View>
+        );
+      })}
+    </View>
   );
 }

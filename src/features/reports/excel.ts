@@ -14,10 +14,37 @@ function appendSheets(workbook: XLSX.WorkBook, data: ReportData) {
     { البند: 'الدخل', المبلغ: data.totalRevenue },
     { البند: 'المصروف', المبلغ: data.totalExpense },
     { البند: 'صافي الربح', المبلغ: data.netProfit },
+    { البند: 'إجمالي كمية المنتجات المباعة', المبلغ: data.totalSoldQuantity },
+    { البند: 'إجمالي البيتزا المباعة', المبلغ: data.pizzaSoldQuantity },
+    { البند: 'إجمالي المشروبات', المبلغ: data.drinkSoldQuantity },
+    { البند: 'إجمالي الصوصات', المبلغ: data.sauceSoldQuantity },
+    { البند: 'عدد عمليات الإيراد', المبلغ: data.revenueCount },
+    { البند: 'عدد عمليات المصروف', المبلغ: data.expenseCount },
+    { البند: 'متوسط فاتورة الإيراد', المبلغ: data.averageRevenueTicket },
     { البند: 'الفترة', المبلغ: `${data.startDate} - ${data.endDate}` },
     { البند: 'الفرع', المبلغ: data.branchLabel },
   ]);
   XLSX.utils.book_append_sheet(workbook, summarySheet, 'الملخص');
+
+  const categoryTotalsSheet = XLSX.utils.json_to_sheet(
+    data.productCategoryTotals.map((row) => ({
+      النوع: row.category,
+      الكمية: row.totalQuantity,
+      الإيراد: row.totalRevenue,
+    }))
+  );
+  XLSX.utils.book_append_sheet(workbook, categoryTotalsSheet, 'إجماليات الأنواع');
+
+  const trendSheet = XLSX.utils.json_to_sheet(
+    data.dailyTrend.map((row) => ({
+      التاريخ: row.date,
+      الدخل: row.totalRevenue,
+      المصروف: row.totalExpense,
+      'صافي الربح': row.netProfit,
+      'كمية المنتجات': row.totalQuantity,
+    }))
+  );
+  XLSX.utils.book_append_sheet(workbook, trendSheet, 'اتجاه الفترة');
 
   const revenueSheet = XLSX.utils.json_to_sheet(
     data.revenueRows.map((row) => ({
