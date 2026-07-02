@@ -9,7 +9,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppIcon } from '@/src/components/AppIcon';
-import { AccountantProfileBar } from '@/src/components/AccountantProfileBar';
 import { BranchSwitcher } from '@/src/components/BranchSwitcher';
 import { EmptyState } from '@/src/components/EmptyState';
 import { RevenueForm, type RevenueFormValues } from '@/src/components/RevenueForm';
@@ -46,20 +45,17 @@ export default function RevenueScreen() {
   const { branches } = useBranches();
   const { products } = useProducts();
   const uid = useAuthStore((state) => state.user?.uid ?? '');
-  const role = useAuthStore((state) => state.profile?.role);
-  const isAccountant = role === 'accountant';
   const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
 
   const [viewDate, setViewDate] = useState(new Date());
   const dateKey = toDateKey(viewDate);
-  const { revenues, loading } = useRevenuesForRange(dateKey, dateKey, !isAccountant);
+  const { revenues, loading } = useRevenuesForRange(dateKey, dateKey);
 
   const [mode, setMode] = useState<'list' | 'add' | 'edit'>('list');
   const [editingRevenue, setEditingRevenue] = useState<Revenue | null>(null);
   const [saving, setSaving] = useState(false);
   const [quickQuantity, setQuickQuantity] = useState(1);
   const [selectedQuickProductId, setSelectedQuickProductId] = useState<string | null>(null);
-  const [formVersion, setFormVersion] = useState(0);
 
   const visibleRevenues =
     selectedBranchId === 'all'
@@ -96,7 +92,6 @@ export default function RevenueScreen() {
         receiptPath: values.receiptPath,
         receiptUrl: values.receiptUrl,
       });
-      setFormVersion((value) => value + 1);
       setMode('list');
     } finally {
       setSaving(false);
@@ -179,104 +174,6 @@ export default function RevenueScreen() {
     selectedBranchId !== 'all' && branches.some((branch) => branch.id === selectedBranchId)
       ? selectedBranchId
       : (branches[0]?.id ?? '');
-
-  if (isAccountant) {
-    return (
-      <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
-        <View className="px-5 py-4">
-          <Text className="text-right font-cairo-bold text-xl text-text-primary dark:text-text-primary-dark">
-            إدخال الإيرادات
-          </Text>
-        </View>
-        <AccountantProfileBar />
-        <ScrollView contentContainerClassName="px-5 pb-28 pt-2">
-          {products.length > 0 && defaultBranchId ? (
-            <View className="mb-4 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
-              <View className="mb-3 flex-row-reverse items-center justify-between">
-                <View className="flex-row-reverse items-center gap-2">
-                  <View className="h-9 w-9 items-center justify-center rounded-full bg-secondary/20 dark:bg-secondary-dark/20">
-                    <AppIcon name="zap" size={19} color="#D64535" />
-                  </View>
-                  <Text className="font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
-                    البيع السريع
-                  </Text>
-                </View>
-                <View className="flex-row-reverse items-center gap-2">
-                  <Pressable
-                    onPress={() => setQuickQuantity((value) => Math.max(1, value - 1))}
-                    accessibilityRole="button"
-                    accessibilityLabel="تقليل الكمية"
-                    className="h-9 w-9 items-center justify-center rounded-xl border border-border bg-background dark:border-border-dark dark:bg-background-dark"
-                  >
-                    <Text className="font-cairo-bold text-lg text-text-primary dark:text-text-primary-dark">-</Text>
-                  </Pressable>
-                  <Text className="w-8 text-center font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
-                    {quickQuantity}
-                  </Text>
-                  <Pressable
-                    onPress={() => setQuickQuantity((value) => value + 1)}
-                    accessibilityRole="button"
-                    accessibilityLabel="زيادة الكمية"
-                    className="h-9 w-9 items-center justify-center rounded-xl border border-border bg-background dark:border-border-dark dark:bg-background-dark"
-                  >
-                    <Text className="font-cairo-bold text-lg text-text-primary dark:text-text-primary-dark">+</Text>
-                  </Pressable>
-                </View>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                className="max-h-16"
-                contentContainerClassName="h-14 items-center gap-2"
-              >
-                {products.map((product) => {
-                  const selected = selectedQuickProductId === product.id;
-                  return (
-                    <Pressable
-                      key={product.id}
-                      onPress={() => handleQuickSale(product.id)}
-                      disabled={saving}
-                      accessibilityRole="button"
-                      accessibilityLabel={`بيع سريع ${product.name}`}
-                      className={`h-12 min-w-32 flex-row-reverse items-center justify-center gap-2 rounded-xl px-4 ${
-                        selected ? 'bg-primary dark:bg-primary-dark' : 'bg-secondary dark:bg-secondary-dark'
-                      }`}
-                    >
-                      {selected ? <AppIcon name="check-circle" size={15} color="#FFFFFF" /> : null}
-                      <Text
-                        numberOfLines={1}
-                        className={`font-cairo-semibold text-sm ${selected ? 'text-white' : 'text-text-primary'}`}
-                      >
-                        {product.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          ) : (
-            <View className="mb-4 flex-row-reverse items-center gap-2 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
-              <AppIcon name="zap" size={19} color="#D64535" />
-              <Text className="flex-1 text-right font-cairo text-sm text-text-secondary dark:text-text-secondary-dark">
-                أضف المنتجات من حساب المالك لتظهر هنا كأزرار بيع سريع للمحاسب.
-              </Text>
-            </View>
-          )}
-          <RevenueForm
-            key={formVersion}
-            branches={branches}
-            products={products}
-            initialValues={emptyFormValues(defaultBranchId)}
-            submitLabel="حفظ الإيراد اليومي"
-            saving={saving}
-            userId={uid}
-            onSubmit={handleAdd}
-            onCancel={() => setFormVersion((value) => value + 1)}
-          />
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>

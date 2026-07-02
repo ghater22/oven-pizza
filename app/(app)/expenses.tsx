@@ -3,7 +3,6 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppIcon } from '@/src/components/AppIcon';
-import { AccountantProfileBar } from '@/src/components/AccountantProfileBar';
 import { BranchSwitcher } from '@/src/components/BranchSwitcher';
 import { EmptyState } from '@/src/components/EmptyState';
 import { ExpenseForm, type ExpenseFormValues } from '@/src/components/ExpenseForm';
@@ -36,19 +35,15 @@ function emptyFormValues(defaultBranchId: string): ExpenseFormValues {
 export default function ExpensesScreen() {
   const { branches } = useBranches();
   const uid = useAuthStore((state) => state.user?.uid ?? '');
-  const role = useAuthStore((state) => state.profile?.role);
-  const isAccountant = role === 'accountant';
   const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
 
   const [viewDate, setViewDate] = useState(new Date());
   const dateKey = toDateKey(viewDate);
-  const { expenses, loading } = useExpensesForRange(dateKey, dateKey, !isAccountant);
+  const { expenses, loading } = useExpensesForRange(dateKey, dateKey);
 
   const [mode, setMode] = useState<'list' | 'add' | 'edit'>('list');
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [saving, setSaving] = useState(false);
-  const [formVersion, setFormVersion] = useState(0);
-  const [quickExpenseCategory, setQuickExpenseCategory] = useState(EXPENSE_CATEGORIES[0]);
 
   const visibleExpenses =
     selectedBranchId === 'all'
@@ -83,7 +78,6 @@ export default function ExpensesScreen() {
         receiptPath: values.receiptPath,
         receiptUrl: values.receiptUrl,
       });
-      setFormVersion((value) => value + 1);
       setMode('list');
     } finally {
       setSaving(false);
@@ -129,76 +123,6 @@ export default function ExpensesScreen() {
     selectedBranchId !== 'all' && branches.some((branch) => branch.id === selectedBranchId)
       ? selectedBranchId
       : (branches[0]?.id ?? '');
-
-  if (isAccountant) {
-    return (
-      <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
-        <View className="px-5 py-4">
-          <Text className="text-right font-cairo-bold text-xl text-text-primary dark:text-text-primary-dark">
-            إدخال المصروفات
-          </Text>
-        </View>
-        <AccountantProfileBar />
-        <ScrollView contentContainerClassName="px-5 pb-28 pt-2">
-          <View className="mb-4 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
-            <View className="mb-3 flex-row-reverse items-center gap-2">
-              <View className="h-9 w-9 items-center justify-center rounded-full bg-secondary/20 dark:bg-secondary-dark/20">
-                <AppIcon name="zap" size={19} color="#D64535" />
-              </View>
-              <Text className="font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
-                إدخال سريع للمصروفات
-              </Text>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="max-h-16"
-              contentContainerClassName="h-14 items-center gap-2"
-            >
-              {EXPENSE_CATEGORIES.map((category) => {
-                const active = category === quickExpenseCategory;
-                return (
-                  <Pressable
-                    key={category}
-                    onPress={() => {
-                      setQuickExpenseCategory(category);
-                      setFormVersion((value) => value + 1);
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`اختيار سريع ${category}`}
-                    className={`h-12 min-w-32 items-center justify-center rounded-xl px-4 ${
-                      active
-                        ? 'bg-primary dark:bg-primary-dark'
-                        : 'border border-border bg-background dark:border-border-dark dark:bg-background-dark'
-                    }`}
-                  >
-                    <Text
-                      numberOfLines={1}
-                      className={`font-cairo-semibold text-sm ${
-                        active ? 'text-white' : 'text-text-primary dark:text-text-primary-dark'
-                      }`}
-                    >
-                      {category}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-          <ExpenseForm
-            key={`${formVersion}-${quickExpenseCategory}`}
-            branches={branches}
-            initialValues={{ ...emptyFormValues(defaultBranchId), category: quickExpenseCategory }}
-            submitLabel="حفظ المصروف اليومي"
-            saving={saving}
-            userId={uid}
-            onSubmit={handleAdd}
-            onCancel={() => setFormVersion((value) => value + 1)}
-          />
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
