@@ -8,7 +8,7 @@ interface AppTextInputProps extends TextInputProps {
 export function AppTextInput({ label, error, ...inputProps }: AppTextInputProps) {
   return (
     <View className="mb-4">
-      <Text className="mb-1.5 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
+      <Text className="mb-1.5 text-right font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
         {label}
       </Text>
       <TextInput
@@ -16,6 +16,7 @@ export function AppTextInput({ label, error, ...inputProps }: AppTextInputProps)
         className={`h-14 rounded-2xl border px-4 text-right font-cairo text-base text-text-primary dark:text-text-primary-dark ${
           error ? 'border-danger dark:border-danger-dark' : 'border-border dark:border-border-dark'
         } bg-surface dark:bg-surface-dark`}
+        style={{ writingDirection: 'rtl' }}
         {...inputProps}
       />
       {error ? (

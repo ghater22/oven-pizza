@@ -31,7 +31,7 @@ export function PrimaryButton({
         <ActivityIndicator color={isPrimary ? '#FFF8F1' : '#D64535'} />
       ) : (
         <Text
-          className={`font-cairo-semibold text-base ${
+          className={`text-center font-cairo-semibold text-base ${
             isPrimary ? 'text-white' : 'text-primary dark:text-primary-dark'
           }`}
         >

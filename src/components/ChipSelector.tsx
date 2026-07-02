@@ -10,10 +10,15 @@ interface ChipSelectorProps {
 export function ChipSelector({ label, options, value, onChange }: ChipSelectorProps) {
   return (
     <View className="mb-4">
-      <Text className="mb-1.5 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
+      <Text className="mb-1.5 text-right font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
         {label}
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="max-h-14" contentContainerClassName="h-12 items-center gap-2">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="max-h-14"
+        contentContainerClassName="h-12 items-center gap-2"
+      >
         {options.map((option) => {
           const active = option === value;
           return (
@@ -30,7 +35,7 @@ export function ChipSelector({ label, options, value, onChange }: ChipSelectorPr
             >
               <Text
                 numberOfLines={1}
-                className={`font-cairo-medium text-sm ${
+                className={`text-center font-cairo-medium text-sm ${
                   active ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
                 }`}
               >
