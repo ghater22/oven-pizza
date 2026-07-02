@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AccountantProfileBar } from '@/src/components/AccountantProfileBar';
 import { AppIcon } from '@/src/components/AppIcon';
 import { BranchSwitcher } from '@/src/components/BranchSwitcher';
 import { EmptyState } from '@/src/components/EmptyState';
@@ -35,6 +36,7 @@ function emptyFormValues(defaultBranchId: string): ExpenseFormValues {
 export default function ExpensesScreen() {
   const { branches } = useBranches();
   const uid = useAuthStore((state) => state.user?.uid ?? '');
+  const isAccountant = useAuthStore((state) => state.profile?.role === 'accountant');
   const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
 
   const [viewDate, setViewDate] = useState(new Date());
@@ -144,6 +146,8 @@ export default function ExpensesScreen() {
           </Pressable>
         ) : null}
       </View>
+
+      {isAccountant ? <AccountantProfileBar /> : null}
 
       {mode === 'list' ? (
         <>

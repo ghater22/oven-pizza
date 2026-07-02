@@ -23,10 +23,16 @@ export function AccountantProfileBar() {
             <AppIcon name="user" size={20} color="#D64535" />
           </View>
           <View className="flex-1">
-            <Text numberOfLines={1} className="text-right font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
+            <Text
+              numberOfLines={1}
+              className="text-right font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark"
+            >
               {profile?.displayName || 'محاسب'}
             </Text>
-            <Text numberOfLines={1} className="mt-0.5 text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">
+            <Text
+              numberOfLines={1}
+              className="mt-0.5 text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark"
+            >
               {profile?.email || user?.email || 'حساب محاسب'}
             </Text>
           </View>
