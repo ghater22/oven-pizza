@@ -13,3 +13,17 @@ export function confirmAction(title: string, message: string, onConfirm: () => v
     { text: 'حذف', style: 'destructive', onPress: onConfirm },
   ]);
 }
+
+export function confirmSaveAction(title: string, message: string, onConfirm: () => void | Promise<void>) {
+  if (Platform.OS === 'web') {
+    if (typeof globalThis.confirm === 'function' && globalThis.confirm(`${title}\n\n${message}`)) {
+      void onConfirm();
+    }
+    return;
+  }
+
+  Alert.alert(title, message, [
+    { text: 'إلغاء', style: 'cancel' },
+    { text: 'اعتماد الحفظ', onPress: () => void onConfirm() },
+  ]);
+}

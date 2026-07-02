@@ -24,7 +24,7 @@ import { useProducts } from '@/src/hooks/useProducts';
 import { useRevenuesForRange } from '@/src/hooks/useRevenuesForRange';
 import { useAuthStore } from '@/src/store/auth';
 import { useBranchStore } from '@/src/store/branch';
-import { confirmAction } from '@/src/utils/confirmAction';
+import { confirmAction, confirmSaveAction } from '@/src/utils/confirmAction';
 import { formatAmount } from '@/src/utils/currency';
 import { toDateKey } from '@/src/utils/date';
 
@@ -105,20 +105,33 @@ export default function RevenueScreen() {
   async function handleQuickSale(productId: string) {
     const product = products.find((item) => item.id === productId);
     if (!product || !defaultBranchId) return;
+    const branch = branches.find((item) => item.id === defaultBranchId);
 
-    setSaving(true);
-    try {
-      await createRevenue(defaultBranchId, {
-        productId: product.id,
-        productName: product.name,
-        quantity: quickQuantity,
-        unitPrice: product.price,
-        timestamp: buildTimestamp(),
-        createdBy: uid,
-      });
-    } finally {
-      setSaving(false);
-    }
+    confirmSaveAction(
+      'مراجعة البيع السريع',
+      [
+        `الفرع: ${branch?.name ?? defaultBranchId}`,
+        `المنتج: ${product.name}`,
+        `الكمية: ${quickQuantity}`,
+        `سعر الوحدة: ${formatAmount(product.price)}`,
+        `الإجمالي: ${formatAmount(quickQuantity * product.price)}`,
+      ].join('\n'),
+      async () => {
+        setSaving(true);
+        try {
+          await createRevenue(defaultBranchId, {
+            productId: product.id,
+            productName: product.name,
+            quantity: quickQuantity,
+            unitPrice: product.price,
+            timestamp: buildTimestamp(),
+            createdBy: uid,
+          });
+        } finally {
+          setSaving(false);
+        }
+      }
+    );
   }
 
   async function handleEdit(values: RevenueFormValues) {

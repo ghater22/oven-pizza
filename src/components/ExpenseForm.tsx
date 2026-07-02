@@ -5,6 +5,8 @@ import { AppIcon } from '@/src/components/AppIcon';
 import { pickAndUploadReceipt } from '@/src/features/attachments/service';
 import type { Branch } from '@/src/features/branches/types';
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '@/src/features/expenses/types';
+import { confirmSaveAction } from '@/src/utils/confirmAction';
+import { formatAmount } from '@/src/utils/currency';
 
 import { AppTextInput } from './AppTextInput';
 import { PrimaryButton } from './PrimaryButton';
@@ -43,6 +45,8 @@ export function ExpenseForm({
   const [values, setValues] = useState(initialValues);
   const [error, setError] = useState<string | null>(null);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const selectedBranch = branches.find((branch) => branch.id === values.branchId);
+  const amountValue = Number(values.amount) || 0;
 
   function handleSubmit() {
     const amount = Number(values.amount);
@@ -57,7 +61,17 @@ export function ExpenseForm({
     }
 
     setError(null);
-    onSubmit(values);
+    confirmSaveAction(
+      'مراجعة المصروف قبل الاعتماد',
+      [
+        `الفرع: ${selectedBranch?.name ?? values.branchId}`,
+        `التصنيف: ${values.category}`,
+        `المبلغ: ${formatAmount(amount)}`,
+        `الملاحظة: ${values.note.trim() || 'لا توجد'}`,
+        `الفاتورة: ${values.receiptName ? 'مرفقة' : 'غير مرفقة'}`,
+      ].join('\n'),
+      () => onSubmit(values)
+    );
   }
 
   async function handlePickReceipt() {
@@ -171,6 +185,20 @@ export function ExpenseForm({
         </Text>
       ) : null}
 
+      <View className="mb-3 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+        <View className="mb-3 flex-row-reverse items-center gap-2">
+          <AppIcon name="check-circle" size={19} color="#3E8E4F" />
+          <Text className="font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
+            مراجعة قبل الاعتماد
+          </Text>
+        </View>
+        <ReviewRow label="الفرع" value={selectedBranch?.name || 'لم يتم اختيار الفرع'} />
+        <ReviewRow label="التصنيف" value={values.category} />
+        <ReviewRow label="المبلغ" value={amountValue > 0 ? formatAmount(amountValue) : '0'} strong />
+        <ReviewRow label="الملاحظة" value={values.note.trim() || 'لا توجد'} />
+        <ReviewRow label="صورة الفاتورة" value={values.receiptName ? 'مرفقة' : 'غير مرفقة'} />
+      </View>
+
       {error ? (
         <Text className="mb-3 text-center font-cairo text-sm text-danger dark:text-danger-dark">
           {error}
@@ -188,6 +216,22 @@ export function ExpenseForm({
           </View>
         ) : null}
       </View>
+    </View>
+  );
+}
+
+function ReviewRow({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <View className="mt-2 flex-row-reverse items-center justify-between gap-3">
+      <Text className="font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">{label}</Text>
+      <Text
+        numberOfLines={1}
+        className={`flex-1 text-left font-cairo text-sm text-text-primary dark:text-text-primary-dark ${
+          strong ? 'font-cairo-bold text-danger dark:text-danger-dark' : ''
+        }`}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
