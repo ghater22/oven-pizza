@@ -24,13 +24,17 @@ import { toDateKey } from '@/src/utils/date';
 function emptyFormValues(defaultBranchId: string): ExpenseFormValues {
   return {
     branchId: defaultBranchId,
-    category: EXPENSE_CATEGORIES[0],
+    category: EXPENSE_CATEGORIES[EXPENSE_CATEGORIES.length - 1],
     amount: '',
     note: '',
     receiptName: undefined,
     receiptPath: undefined,
     receiptUrl: undefined,
   };
+}
+
+function formatEntryDateLabel(date: Date) {
+  return `${toDateKey(date)} - ${date.toLocaleDateString('ar-SA', { weekday: 'long' })}`;
 }
 
 export default function ExpensesScreen() {
@@ -126,6 +130,9 @@ export default function ExpensesScreen() {
       ? selectedBranchId
       : (branches[0]?.id ?? '');
 
+  const formDate = editingExpense?.timestamp ?? viewDate;
+  const entryDateLabel = formatEntryDateLabel(formDate);
+
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
       <View className="flex-row-reverse items-center justify-between px-5 py-4">
@@ -158,7 +165,7 @@ export default function ExpensesScreen() {
               <AppIcon name="chevron-right" size={22} color="#7A6A5F" />
             </Pressable>
             <Text className="font-cairo-medium text-sm text-text-primary dark:text-text-primary-dark">
-              {dateKey}
+              {formatEntryDateLabel(viewDate)}
             </Text>
             <Pressable onPress={() => changeDay(1)} accessibilityLabel="اليوم التالي">
               <AppIcon name="chevron-left" size={22} color="#7A6A5F" />
@@ -215,6 +222,7 @@ export default function ExpensesScreen() {
         <ScrollView contentContainerClassName="px-5 py-4">
           <ExpenseForm
             branches={branches}
+            entryDateLabel={entryDateLabel}
             initialValues={
               mode === 'edit' && editingExpense
                 ? {

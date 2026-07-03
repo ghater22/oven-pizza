@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccountantProfileBar } from '@/src/components/AccountantProfileBar';
@@ -20,19 +14,18 @@ import {
 } from '@/src/features/revenue/service';
 import type { Revenue } from '@/src/features/revenue/types';
 import { useBranches } from '@/src/hooks/useBranches';
-import { useProducts } from '@/src/hooks/useProducts';
 import { useRevenuesForRange } from '@/src/hooks/useRevenuesForRange';
 import { useAuthStore } from '@/src/store/auth';
 import { useBranchStore } from '@/src/store/branch';
-import { confirmAction, confirmSaveAction } from '@/src/utils/confirmAction';
+import { confirmAction } from '@/src/utils/confirmAction';
 import { formatAmount } from '@/src/utils/currency';
 import { toDateKey } from '@/src/utils/date';
 
 function emptyFormValues(defaultBranchId: string): RevenueFormValues {
   return {
     branchId: defaultBranchId,
-    productId: '',
-    productName: '',
+    productId: 'daily-total',
+    productName: 'إجمالي دخل اليوم',
     quantity: '1',
     unitPrice: '',
     note: '',
@@ -42,9 +35,12 @@ function emptyFormValues(defaultBranchId: string): RevenueFormValues {
   };
 }
 
+function formatEntryDateLabel(date: Date) {
+  return `${toDateKey(date)} - ${date.toLocaleDateString('ar-SA', { weekday: 'long' })}`;
+}
+
 export default function RevenueScreen() {
   const { branches } = useBranches();
-  const { products } = useProducts();
   const uid = useAuthStore((state) => state.user?.uid ?? '');
   const isAccountant = useAuthStore((state) => state.profile?.role === 'accountant');
   const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
@@ -56,8 +52,6 @@ export default function RevenueScreen() {
   const [mode, setMode] = useState<'list' | 'add' | 'edit'>('list');
   const [editingRevenue, setEditingRevenue] = useState<Revenue | null>(null);
   const [saving, setSaving] = useState(false);
-  const [quickQuantity, setQuickQuantity] = useState(1);
-  const [selectedQuickProductId, setSelectedQuickProductId] = useState<string | null>(null);
 
   const visibleRevenues =
     selectedBranchId === 'all'
@@ -83,9 +77,9 @@ export default function RevenueScreen() {
     setSaving(true);
     try {
       await createRevenue(values.branchId, {
-        productId: values.productId,
-        productName: values.productName,
-        quantity: Number(values.quantity),
+        productId: 'daily-total',
+        productName: 'إجمالي دخل اليوم',
+        quantity: 1,
         unitPrice: Number(values.unitPrice),
         timestamp: buildTimestamp(),
         note: values.note.trim() || undefined,
@@ -100,49 +94,14 @@ export default function RevenueScreen() {
     }
   }
 
-  async function handleQuickSale(productId: string) {
-    const product = products.find((item) => item.id === productId);
-    if (!product || !defaultBranchId) return;
-    const branch = branches.find((item) => item.id === defaultBranchId);
-    setSelectedQuickProductId(product.id);
-
-    confirmSaveAction(
-      'مراجعة البيع السريع',
-      [
-        `الفرع: ${branch?.name ?? defaultBranchId}`,
-        `المنتج: ${product.name}`,
-        `الكمية: ${quickQuantity}`,
-        `سعر الوحدة: ${formatAmount(product.price)}`,
-        `الإجمالي: ${formatAmount(quickQuantity * product.price)}`,
-      ].join('\n'),
-      async () => {
-        setSaving(true);
-        try {
-          await createRevenue(defaultBranchId, {
-            productId: product.id,
-            productName: product.name,
-            quantity: quickQuantity,
-            unitPrice: product.price,
-            timestamp: buildTimestamp(),
-            createdBy: uid,
-          });
-        } finally {
-          setSaving(false);
-          setSelectedQuickProductId(null);
-        }
-      },
-      () => setSelectedQuickProductId(null)
-    );
-  }
-
   async function handleEdit(values: RevenueFormValues) {
     if (!editingRevenue) return;
     setSaving(true);
     try {
       await updateRevenue(values.branchId, editingRevenue.id, {
-        productId: values.productId,
-        productName: values.productName,
-        quantity: Number(values.quantity),
+        productId: 'daily-total',
+        productName: 'إجمالي دخل اليوم',
+        quantity: 1,
         unitPrice: Number(values.unitPrice),
         timestamp: editingRevenue.timestamp,
         note: values.note.trim() || undefined,
@@ -163,7 +122,7 @@ export default function RevenueScreen() {
       if (!editingRevenue) return;
       setSaving(true);
       try {
-            await deleteRevenue(editingRevenue.branchId, editingRevenue.id, uid);
+        await deleteRevenue(editingRevenue.branchId, editingRevenue.id, uid);
         setMode('list');
         setEditingRevenue(null);
       } finally {
@@ -176,6 +135,9 @@ export default function RevenueScreen() {
     selectedBranchId !== 'all' && branches.some((branch) => branch.id === selectedBranchId)
       ? selectedBranchId
       : (branches[0]?.id ?? '');
+
+  const formDate = editingRevenue?.timestamp ?? viewDate;
+  const entryDateLabel = formatEntryDateLabel(formDate);
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={['top']}>
@@ -204,79 +166,12 @@ export default function RevenueScreen() {
         <>
           <BranchSwitcher />
 
-          {products.length > 0 && defaultBranchId ? (
-            <View className="px-5 pb-4">
-              <View className="mb-2 flex-row-reverse items-center justify-between">
-                <Text className="font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
-                  بيع سريع
-                </Text>
-                <View className="flex-row-reverse items-center gap-2">
-                  <Pressable
-                    onPress={() => setQuickQuantity((value) => Math.max(1, value - 1))}
-                    accessibilityRole="button"
-                    accessibilityLabel="تقليل الكمية"
-                    className="h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface dark:border-border-dark dark:bg-surface-dark"
-                  >
-                    <Text className="font-cairo-bold text-lg text-text-primary dark:text-text-primary-dark">-</Text>
-                  </Pressable>
-                  <Text className="w-8 text-center font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
-                    {quickQuantity}
-                  </Text>
-                  <Pressable
-                    onPress={() => setQuickQuantity((value) => value + 1)}
-                    accessibilityRole="button"
-                    accessibilityLabel="زيادة الكمية"
-                    className="h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface dark:border-border-dark dark:bg-surface-dark"
-                  >
-                    <Text className="font-cairo-bold text-lg text-text-primary dark:text-text-primary-dark">+</Text>
-                  </Pressable>
-                </View>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="max-h-16" contentContainerClassName="h-14 items-center gap-2">
-                {products.map((product) => {
-                  const selected = selectedQuickProductId === product.id;
-                  return (
-                    <Pressable
-                      key={product.id}
-                      onPress={() => handleQuickSale(product.id)}
-                      disabled={saving}
-                      accessibilityRole="button"
-                      accessibilityLabel={`بيع سريع ${product.name}`}
-                      className={`h-12 min-w-32 flex-row-reverse items-center justify-center gap-2 rounded-xl px-4 ${
-                        selected ? 'bg-primary dark:bg-primary-dark' : 'bg-secondary dark:bg-secondary-dark'
-                      }`}
-                    >
-                      {selected ? <AppIcon name="check-circle" size={15} color="#FFFFFF" /> : null}
-                      <Text
-                        numberOfLines={1}
-                        className={`font-cairo-semibold text-sm ${selected ? 'text-white' : 'text-text-primary'}`}
-                      >
-                        {product.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          ) : (
-            <View className="px-5 pb-4">
-              <View className="rounded-xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
-                <Text className="text-right font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
-                  البيع السريع
-                </Text>
-                <Text className="mt-1 text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">
-                  أضف منتجات من الإعدادات لتظهر هنا كأزرار بيع جاهزة بالسعر والكمية.
-                </Text>
-              </View>
-            </View>
-          )}
-
           <View className="flex-row-reverse items-center justify-between px-5 pb-3">
             <Pressable onPress={() => changeDay(-1)} accessibilityLabel="اليوم السابق">
               <AppIcon name="chevron-right" size={22} color="#7A6A5F" />
             </Pressable>
             <Text className="font-cairo-medium text-sm text-text-primary dark:text-text-primary-dark">
-              {dateKey}
+              {formatEntryDateLabel(viewDate)}
             </Text>
             <Pressable onPress={() => changeDay(1)} accessibilityLabel="اليوم التالي">
               <AppIcon name="chevron-left" size={22} color="#7A6A5F" />
@@ -288,7 +183,7 @@ export default function RevenueScreen() {
               <ActivityIndicator color="#D64535" size="large" />
             </View>
           ) : visibleRevenues.length === 0 ? (
-            <EmptyState title="لا توجد إيرادات مسجّلة" description="اضغط + لإضافة أول إيراد لهذا اليوم" />
+            <EmptyState title="لا توجد إيرادات مسجلة" description="اضغط + لإضافة مجموع دخل اليوم." />
           ) : (
             <ScrollView contentContainerClassName="px-5 pb-8">
               {visibleRevenues.map((revenue) => {
@@ -304,11 +199,10 @@ export default function RevenueScreen() {
                   >
                     <View>
                       <Text className="font-cairo-medium text-base text-text-primary dark:text-text-primary-dark">
-                        {revenue.productName}
+                        {revenue.productName || 'إجمالي دخل اليوم'}
                       </Text>
                       <Text className="text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">
-                        {revenue.quantity} × {formatAmount(revenue.unitPrice)}
-                        {selectedBranchId === 'all' && branch ? ` · ${branch.name}` : ''}
+                        {selectedBranchId === 'all' && branch ? branch.name : formatEntryDateLabel(revenue.timestamp)}
                       </Text>
                     </View>
                     <Text className="font-cairo-semibold text-sm text-success dark:text-success-dark">
@@ -332,15 +226,15 @@ export default function RevenueScreen() {
         <ScrollView contentContainerClassName="px-5 py-4">
           <RevenueForm
             branches={branches}
-            products={products}
+            entryDateLabel={entryDateLabel}
             initialValues={
               mode === 'edit' && editingRevenue
                 ? {
                     branchId: editingRevenue.branchId,
-                    productId: editingRevenue.productId,
-                    productName: editingRevenue.productName,
-                    quantity: String(editingRevenue.quantity),
-                    unitPrice: String(editingRevenue.unitPrice),
+                    productId: 'daily-total',
+                    productName: 'إجمالي دخل اليوم',
+                    quantity: '1',
+                    unitPrice: String(editingRevenue.total || editingRevenue.unitPrice),
                     note: editingRevenue.note ?? '',
                     receiptName: editingRevenue.receiptName,
                     receiptPath: editingRevenue.receiptPath,
@@ -348,7 +242,7 @@ export default function RevenueScreen() {
                   }
                 : emptyFormValues(defaultBranchId)
             }
-            submitLabel={mode === 'edit' ? 'حفظ التعديلات' : 'إضافة الإيراد'}
+            submitLabel={mode === 'edit' ? 'حفظ التعديلات' : 'حفظ مجموع دخل اليوم'}
             saving={saving}
             userId={uid}
             onSubmit={mode === 'edit' ? handleEdit : handleAdd}

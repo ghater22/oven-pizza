@@ -4,7 +4,6 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { AppIcon } from '@/src/components/AppIcon';
 import { pickAndUploadReceipt } from '@/src/features/attachments/service';
 import type { Branch } from '@/src/features/branches/types';
-import type { Product } from '@/src/features/products/types';
 import { confirmSaveAction } from '@/src/utils/confirmAction';
 import { formatAmount } from '@/src/utils/currency';
 
@@ -25,7 +24,7 @@ export interface RevenueFormValues {
 
 interface RevenueFormProps {
   branches: Branch[];
-  products: Product[];
+  entryDateLabel: string;
   initialValues: RevenueFormValues;
   submitLabel: string;
   saving: boolean;
@@ -37,7 +36,7 @@ interface RevenueFormProps {
 
 export function RevenueForm({
   branches,
-  products,
+  entryDateLabel,
   initialValues,
   submitLabel,
   saving,
@@ -50,44 +49,27 @@ export function RevenueForm({
   const [error, setError] = useState<string | null>(null);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const selectedBranch = branches.find((branch) => branch.id === values.branchId);
-  const quantityValue = Number(values.quantity) || 0;
-  const unitPriceValue = Number(values.unitPrice) || 0;
-  const totalValue = quantityValue * unitPriceValue;
-
-  function selectProduct(product: Product) {
-    setValues((prev) => ({
-      ...prev,
-      productId: product.id,
-      productName: product.name,
-      unitPrice: String(product.price),
-    }));
-  }
+  const dailyIncome = Number(values.unitPrice) || 0;
 
   function handleSubmit() {
-    const quantity = Number(values.quantity);
-    const unitPrice = Number(values.unitPrice);
+    const amount = Number(values.unitPrice);
 
     if (!values.branchId) {
       setError('الرجاء اختيار الفرع');
       return;
     }
-    if (!values.productName.trim()) {
-      setError('الرجاء إدخال اسم المنتج أو اختياره من القائمة');
-      return;
-    }
-    if (!quantity || quantity <= 0) {
-      setError('الرجاء إدخال كمية صحيحة');
-      return;
-    }
-    if (!unitPrice || unitPrice <= 0) {
-      setError('الرجاء إدخال سعر صحيح');
+    if (!amount || amount <= 0) {
+      setError('الرجاء إدخال مجموع دخل اليوم بشكل صحيح');
       return;
     }
 
-    const reviewedValues = {
+    const reviewedValues: RevenueFormValues = {
       ...values,
-      productId: values.productId || 'manual',
-      productName: values.productName.trim(),
+      productId: 'daily-total',
+      productName: 'إجمالي دخل اليوم',
+      quantity: '1',
+      unitPrice: String(amount),
+      note: values.note.trim(),
     };
 
     setError(null);
@@ -95,10 +77,9 @@ export function RevenueForm({
       'مراجعة الإيراد قبل الاعتماد',
       [
         `الفرع: ${selectedBranch?.name ?? values.branchId}`,
-        `المنتج: ${reviewedValues.productName}`,
-        `الكمية: ${quantity}`,
-        `سعر الوحدة: ${formatAmount(unitPrice)}`,
-        `الإجمالي: ${formatAmount(quantity * unitPrice)}`,
+        `التاريخ واليوم: ${entryDateLabel}`,
+        `مجموع الدخل اليوم: ${formatAmount(amount)}`,
+        `الملاحظات: ${reviewedValues.note || 'لا توجد'}`,
         `الفاتورة: ${values.receiptName ? 'مرفقة' : 'غير مرفقة'}`,
       ].join('\n'),
       () => onSubmit(reviewedValues)
@@ -134,7 +115,12 @@ export function RevenueForm({
       <Text className="mb-1.5 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
         الفرع
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 max-h-14" contentContainerClassName="h-12 items-center gap-2">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="mb-4 max-h-14"
+        contentContainerClassName="h-12 items-center gap-2"
+      >
         {branches.map((branch) => {
           const active = branch.id === values.branchId;
           return (
@@ -162,79 +148,36 @@ export function RevenueForm({
         })}
       </ScrollView>
 
-      <Text className="mb-1.5 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
-        المنتج
-      </Text>
-      {products.length > 0 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 max-h-14" contentContainerClassName="h-12 items-center gap-2">
-          {products.map((product) => {
-            const active = product.id === values.productId;
-            return (
-              <Pressable
-                key={product.id}
-                onPress={() => selectProduct(product)}
-                accessibilityRole="button"
-                accessibilityLabel={`اختيار ${product.name}`}
-                className={`h-11 min-w-28 items-center justify-center rounded-xl px-4 ${
-                  active
-                    ? 'bg-primary dark:bg-primary-dark'
-                    : 'border border-border bg-surface dark:border-border-dark dark:bg-surface-dark'
-                }`}
-              >
-                <Text
-                  numberOfLines={1}
-                  className={`font-cairo-medium text-sm ${
-                    active ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'
-                  }`}
-                >
-                  {product.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      ) : (
-        <Text className="mb-3 text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">
-          لا توجد منتجات محفوظة. يمكنك إدخال اسم المنتج يدوياً الآن.
+      <View className="mb-3 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+        <Text className="text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">
+          التاريخ واليوم
         </Text>
-      )}
-
-      <AppTextInput
-        label="اسم المنتج"
-        value={values.productName}
-        onChangeText={(text) =>
-          setValues((prev) => ({
-            ...prev,
-            productId: '',
-            productName: text,
-          }))
-        }
-        placeholder="مثال: بيتزا خضار"
-      />
-
-      <View className="flex-row-reverse gap-3">
-        <View className="flex-1">
-          <AppTextInput
-            label="الكمية"
-            value={values.quantity}
-            onChangeText={(text) => setValues((prev) => ({ ...prev, quantity: text }))}
-            keyboardType="numeric"
-          />
-        </View>
-        <View className="flex-1">
-          <AppTextInput
-            label="سعر الوحدة"
-            value={values.unitPrice}
-            onChangeText={(text) => setValues((prev) => ({ ...prev, unitPrice: text }))}
-            keyboardType="numeric"
-          />
-        </View>
+        <Text className="mt-1 text-right font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
+          {entryDateLabel}
+        </Text>
       </View>
 
       <AppTextInput
-        label="ملاحظة (اختياري)"
+        label="مجموع الدخل اليوم"
+        value={values.unitPrice}
+        onChangeText={(text) =>
+          setValues((prev) => ({
+            ...prev,
+            productId: 'daily-total',
+            productName: 'إجمالي دخل اليوم',
+            quantity: '1',
+            unitPrice: text,
+          }))
+        }
+        keyboardType="numeric"
+        placeholder="مثال: 2500"
+      />
+
+      <AppTextInput
+        label="ملاحظات"
         value={values.note}
         onChangeText={(text) => setValues((prev) => ({ ...prev, note: text }))}
+        placeholder="اختياري"
       />
 
       <Pressable
@@ -246,7 +189,11 @@ export function RevenueForm({
       >
         <AppIcon name="image" size={20} color={values.receiptUrl ? '#4E9F6E' : '#7A6A5F'} />
         <Text className="font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
-          {uploadingReceipt ? 'جاري رفع الفاتورة...' : values.receiptUrl ? 'تم رفع صورة الفاتورة' : 'رفع صورة فاتورة'}
+          {uploadingReceipt
+            ? 'جاري رفع الفاتورة...'
+            : values.receiptUrl
+              ? 'تم رفع صورة الفاتورة'
+              : 'رفع صورة فاتورة'}
         </Text>
       </Pressable>
 
@@ -264,10 +211,9 @@ export function RevenueForm({
           </Text>
         </View>
         <ReviewRow label="الفرع" value={selectedBranch?.name || 'لم يتم اختيار الفرع'} />
-        <ReviewRow label="المنتج" value={values.productName.trim() || 'لم يتم إدخال المنتج'} />
-        <ReviewRow label="الكمية" value={values.quantity || '0'} />
-        <ReviewRow label="سعر الوحدة" value={unitPriceValue > 0 ? formatAmount(unitPriceValue) : '0'} />
-        <ReviewRow label="الإجمالي" value={totalValue > 0 ? formatAmount(totalValue) : '0'} strong />
+        <ReviewRow label="التاريخ واليوم" value={entryDateLabel} />
+        <ReviewRow label="مجموع الدخل اليوم" value={dailyIncome > 0 ? formatAmount(dailyIncome) : '0'} strong />
+        <ReviewRow label="الملاحظات" value={values.note.trim() || 'لا توجد'} />
         <ReviewRow label="صورة الفاتورة" value={values.receiptName ? 'مرفقة' : 'غير مرفقة'} />
       </View>
 

@@ -4,7 +4,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { AppIcon } from '@/src/components/AppIcon';
 import { pickAndUploadReceipt } from '@/src/features/attachments/service';
 import type { Branch } from '@/src/features/branches/types';
-import { EXPENSE_CATEGORIES, type ExpenseCategory } from '@/src/features/expenses/types';
+import type { ExpenseCategory } from '@/src/features/expenses/types';
 import { confirmSaveAction } from '@/src/utils/confirmAction';
 import { formatAmount } from '@/src/utils/currency';
 
@@ -23,6 +23,7 @@ export interface ExpenseFormValues {
 
 interface ExpenseFormProps {
   branches: Branch[];
+  entryDateLabel: string;
   initialValues: ExpenseFormValues;
   submitLabel: string;
   saving: boolean;
@@ -34,6 +35,7 @@ interface ExpenseFormProps {
 
 export function ExpenseForm({
   branches,
+  entryDateLabel,
   initialValues,
   submitLabel,
   saving,
@@ -56,21 +58,27 @@ export function ExpenseForm({
       return;
     }
     if (!amount || amount <= 0) {
-      setError('الرجاء إدخال مبلغ صحيح');
+      setError('الرجاء إدخال مجموع مصروفات اليوم بشكل صحيح');
       return;
     }
+
+    const reviewedValues: ExpenseFormValues = {
+      ...values,
+      amount: String(amount),
+      note: values.note.trim(),
+    };
 
     setError(null);
     confirmSaveAction(
       'مراجعة المصروف قبل الاعتماد',
       [
         `الفرع: ${selectedBranch?.name ?? values.branchId}`,
-        `التصنيف: ${values.category}`,
-        `المبلغ: ${formatAmount(amount)}`,
-        `الملاحظة: ${values.note.trim() || 'لا توجد'}`,
+        `التاريخ واليوم: ${entryDateLabel}`,
+        `مجموع المصروفات اليوم: ${formatAmount(amount)}`,
+        `الملاحظات: ${reviewedValues.note || 'لا توجد'}`,
         `الفاتورة: ${values.receiptName ? 'مرفقة' : 'غير مرفقة'}`,
       ].join('\n'),
-      () => onSubmit(values)
+      () => onSubmit(reviewedValues)
     );
   }
 
@@ -103,13 +111,20 @@ export function ExpenseForm({
       <Text className="mb-1.5 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
         الفرع
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 max-h-14" contentContainerClassName="h-12 items-center gap-2">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="mb-4 max-h-14"
+        contentContainerClassName="h-12 items-center gap-2"
+      >
         {branches.map((branch) => {
           const active = branch.id === values.branchId;
           return (
             <Pressable
               key={branch.id}
               onPress={() => setValues((prev) => ({ ...prev, branchId: branch.id }))}
+              accessibilityRole="button"
+              accessibilityLabel={`اختيار ${branch.name}`}
               className={`h-11 min-w-28 items-center justify-center rounded-xl px-4 ${
                 active
                   ? 'bg-primary dark:bg-primary-dark'
@@ -127,43 +142,28 @@ export function ExpenseForm({
         })}
       </ScrollView>
 
-      <Text className="mb-1.5 font-cairo-medium text-sm text-text-secondary dark:text-text-secondary-dark">
-        التصنيف
-      </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 max-h-14" contentContainerClassName="h-12 items-center gap-2">
-        {EXPENSE_CATEGORIES.map((category) => {
-          const active = category === values.category;
-          return (
-            <Pressable
-              key={category}
-              onPress={() => setValues((prev) => ({ ...prev, category }))}
-              className={`h-11 min-w-28 items-center justify-center rounded-xl px-4 ${
-                active
-                  ? 'bg-primary dark:bg-primary-dark'
-                  : 'border border-border bg-surface dark:border-border-dark dark:bg-surface-dark'
-              }`}
-            >
-              <Text
-                numberOfLines={1}
-                className={`font-cairo-medium text-sm ${active ? 'text-white' : 'text-text-secondary dark:text-text-secondary-dark'}`}
-              >
-                {category}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <View className="mb-3 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+        <Text className="text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">
+          التاريخ واليوم
+        </Text>
+        <Text className="mt-1 text-right font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
+          {entryDateLabel}
+        </Text>
+      </View>
 
       <AppTextInput
-        label="المبلغ"
+        label="مجموع المصروفات اليوم"
         value={values.amount}
         onChangeText={(text) => setValues((prev) => ({ ...prev, amount: text }))}
         keyboardType="numeric"
+        placeholder="مثال: 1400"
       />
+
       <AppTextInput
-        label="ملاحظة (اختياري)"
+        label="ملاحظات"
         value={values.note}
         onChangeText={(text) => setValues((prev) => ({ ...prev, note: text }))}
+        placeholder="اختياري"
       />
 
       <Pressable
@@ -175,7 +175,11 @@ export function ExpenseForm({
       >
         <AppIcon name="image" size={20} color={values.receiptUrl ? '#4E9F6E' : '#7A6A5F'} />
         <Text className="font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
-          {uploadingReceipt ? 'جاري رفع الفاتورة...' : values.receiptUrl ? 'تم رفع صورة الفاتورة' : 'رفع صورة فاتورة'}
+          {uploadingReceipt
+            ? 'جاري رفع الفاتورة...'
+            : values.receiptUrl
+              ? 'تم رفع صورة الفاتورة'
+              : 'رفع صورة فاتورة'}
         </Text>
       </Pressable>
 
@@ -193,9 +197,9 @@ export function ExpenseForm({
           </Text>
         </View>
         <ReviewRow label="الفرع" value={selectedBranch?.name || 'لم يتم اختيار الفرع'} />
-        <ReviewRow label="التصنيف" value={values.category} />
-        <ReviewRow label="المبلغ" value={amountValue > 0 ? formatAmount(amountValue) : '0'} strong />
-        <ReviewRow label="الملاحظة" value={values.note.trim() || 'لا توجد'} />
+        <ReviewRow label="التاريخ واليوم" value={entryDateLabel} />
+        <ReviewRow label="مجموع المصروفات اليوم" value={amountValue > 0 ? formatAmount(amountValue) : '0'} strong />
+        <ReviewRow label="الملاحظات" value={values.note.trim() || 'لا توجد'} />
         <ReviewRow label="صورة الفاتورة" value={values.receiptName ? 'مرفقة' : 'غير مرفقة'} />
       </View>
 
