@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccountantProfileBar } from '@/src/components/AccountantProfileBar';
@@ -85,6 +85,7 @@ export default function ExpensesScreen() {
         receiptUrl: values.receiptUrl,
       });
       setMode('list');
+      Alert.alert('تم الإرسال والاعتماد', 'تم حفظ مصروفات اليوم بنجاح. لا تقم بإعادة الإدخال لنفس البيانات.');
     } finally {
       setSaving(false);
     }
@@ -105,6 +106,7 @@ export default function ExpensesScreen() {
       });
       setMode('list');
       setEditingExpense(null);
+      Alert.alert('تم حفظ التعديل', 'تم اعتماد تعديل المصروف بنجاح.');
     } finally {
       setSaving(false);
     }

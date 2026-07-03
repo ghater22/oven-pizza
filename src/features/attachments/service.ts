@@ -67,6 +67,17 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, data] = dataUrl.split(',');
+  const mime = header?.match(/data:(.*?);/)?.[1] || 'image/jpeg';
+  const binary = atob(data || '');
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return new Blob([bytes], { type: mime });
+}
+
 async function compressImageAsDataUrl(file: File): Promise<string> {
   const dataUrl = await readFileAsDataUrl(file);
   const image = await loadImage(dataUrl);
@@ -94,6 +105,36 @@ async function compressImageAsDataUrl(file: File): Promise<string> {
   return compressed;
 }
 
+async function prepareUploadFile(file: File): Promise<{ body: Blob | File; contentType: string; safeName: string; inlineUrl: string }> {
+  const safeName = sanitizeFileName(file.name || 'receipt.jpg');
+
+  if (!file.type.startsWith('image/') || file.type === 'image/gif' || file.type === 'image/svg+xml') {
+    return {
+      body: file,
+      contentType: file.type || 'image/jpeg',
+      safeName,
+      inlineUrl: await readFileAsDataUrl(file),
+    };
+  }
+
+  try {
+    const inlineUrl = await compressImageAsDataUrl(file);
+    return {
+      body: dataUrlToBlob(inlineUrl),
+      contentType: 'image/jpeg',
+      safeName: safeName.replace(/\.[^.]+$/, '') + '.jpg',
+      inlineUrl,
+    };
+  } catch {
+    return {
+      body: file,
+      contentType: file.type || 'image/jpeg',
+      safeName,
+      inlineUrl: await readFileAsDataUrl(file),
+    };
+  }
+}
+
 export async function pickAndUploadReceipt({
   branchId,
   recordType,
@@ -102,29 +143,28 @@ export async function pickAndUploadReceipt({
   const file = await pickImageFile();
   if (!file) return null;
 
-  const safeName = sanitizeFileName(file.name || 'receipt.jpg');
-  const receiptPath = `receipts/${branchId}/${recordType}/${Date.now()}-${safeName}`;
+  const uploadFile = await prepareUploadFile(file);
+  const receiptPath = `receipts/${branchId}/${recordType}/${Date.now()}-${uploadFile.safeName}`;
   try {
     const receiptRef = ref(getFirebaseStorage(), receiptPath);
 
-    await uploadBytes(receiptRef, file, {
-      contentType: file.type || 'image/jpeg',
+    await uploadBytes(receiptRef, uploadFile.body, {
+      contentType: uploadFile.contentType,
       customMetadata: { uploadedBy: userId },
     });
 
     const receiptUrl = await getDownloadURL(receiptRef);
 
     return {
-      receiptName: file.name || safeName,
+      receiptName: file.name || uploadFile.safeName,
       receiptPath,
       receiptUrl,
     };
   } catch {
-    const receiptUrl = await compressImageAsDataUrl(file);
     return {
-      receiptName: file.name || safeName,
-      receiptPath: `inline/${branchId}/${recordType}/${Date.now()}-${safeName}`,
-      receiptUrl,
+      receiptName: file.name || uploadFile.safeName,
+      receiptPath: `inline/${branchId}/${recordType}/${Date.now()}-${uploadFile.safeName}`,
+      receiptUrl: uploadFile.inlineUrl,
     };
   }
 }
