@@ -11,37 +11,27 @@ function safeFileName(data: ReportData): string {
 
 function appendSheets(workbook: XLSX.WorkBook, data: ReportData) {
   const summarySheet = XLSX.utils.json_to_sheet([
-    { البند: 'الدخل', المبلغ: data.totalRevenue },
-    { البند: 'المصروف', المبلغ: data.totalExpense },
-    { البند: 'صافي الربح', المبلغ: data.netProfit },
-    { البند: 'إجمالي كمية المنتجات المباعة', المبلغ: data.totalSoldQuantity },
-    { البند: 'إجمالي البيتزا المباعة', المبلغ: data.pizzaSoldQuantity },
-    { البند: 'إجمالي المشروبات', المبلغ: data.drinkSoldQuantity },
-    { البند: 'إجمالي الصوصات', المبلغ: data.sauceSoldQuantity },
-    { البند: 'عدد عمليات الإيراد', المبلغ: data.revenueCount },
-    { البند: 'عدد عمليات المصروف', المبلغ: data.expenseCount },
-    { البند: 'متوسط فاتورة الإيراد', المبلغ: data.averageRevenueTicket },
-    { البند: 'الفترة', المبلغ: `${data.startDate} - ${data.endDate}` },
-    { البند: 'الفرع', المبلغ: data.branchLabel },
+    { البند: 'الفترة', القيمة: `${data.startDate} - ${data.endDate}` },
+    { البند: 'الفرع', القيمة: data.branchLabel },
+    { البند: 'إجمالي الدخل', القيمة: data.totalRevenue },
+    { البند: 'إجمالي المصروفات', القيمة: data.totalExpense },
+    { البند: 'صافي الربح', القيمة: data.netProfit },
+    { البند: 'عدد عمليات الدخل', القيمة: data.revenueCount },
+    { البند: 'عدد عمليات المصروفات', القيمة: data.expenseCount },
+    { البند: 'عدد الأيام التي تحتوي بيانات', القيمة: data.activeDays },
+    { البند: 'متوسط إدخال الدخل', القيمة: data.averageRevenueEntry },
+    { البند: 'متوسط إدخال المصروف', القيمة: data.averageExpenseEntry },
+    { البند: 'أفضل يوم دخل', القيمة: data.bestRevenueDay ? `${data.bestRevenueDay.date} - ${data.bestRevenueDay.totalRevenue}` : '' },
+    { البند: 'أعلى يوم مصروفات', القيمة: data.highestExpenseDay ? `${data.highestExpenseDay.date} - ${data.highestExpenseDay.totalExpense}` : '' },
   ]);
   XLSX.utils.book_append_sheet(workbook, summarySheet, 'الملخص');
-
-  const categoryTotalsSheet = XLSX.utils.json_to_sheet(
-    data.productCategoryTotals.map((row) => ({
-      النوع: row.category,
-      الكمية: row.totalQuantity,
-      الإيراد: row.totalRevenue,
-    }))
-  );
-  XLSX.utils.book_append_sheet(workbook, categoryTotalsSheet, 'إجماليات الأنواع');
 
   const trendSheet = XLSX.utils.json_to_sheet(
     data.dailyTrend.map((row) => ({
       التاريخ: row.date,
       الدخل: row.totalRevenue,
-      المصروف: row.totalExpense,
+      المصروفات: row.totalExpense,
       'صافي الربح': row.netProfit,
-      'كمية المنتجات': row.totalQuantity,
     }))
   );
   XLSX.utils.book_append_sheet(workbook, trendSheet, 'اتجاه الفترة');
@@ -50,20 +40,17 @@ function appendSheets(workbook: XLSX.WorkBook, data: ReportData) {
     data.revenueRows.map((row) => ({
       التاريخ: row.date,
       الفرع: row.branchName,
-      المنتج: row.productName,
-      الكمية: row.quantity,
-      'سعر الوحدة': row.unitPrice,
-      الإجمالي: row.total,
+      الملاحظات: row.note ?? '',
+      المبلغ: row.amount,
     }))
   );
-  XLSX.utils.book_append_sheet(workbook, revenueSheet, 'تفاصيل الإيرادات');
+  XLSX.utils.book_append_sheet(workbook, revenueSheet, 'تفاصيل الدخل');
 
   const expenseDetailsSheet = XLSX.utils.json_to_sheet(
     data.expenseRows.map((row) => ({
       التاريخ: row.date,
       الفرع: row.branchName,
-      التصنيف: row.category,
-      الملاحظة: row.note ?? '',
+      الملاحظات: row.note ?? '',
       المبلغ: row.amount,
     }))
   );
@@ -74,29 +61,11 @@ function appendSheets(workbook: XLSX.WorkBook, data: ReportData) {
       data.branchTotals.map((branch) => ({
         الفرع: branch.branchName,
         الدخل: branch.totalRevenue,
-        المصروف: branch.totalExpense,
+        المصروفات: branch.totalExpense,
         'صافي الربح': branch.netProfit,
       }))
     );
     XLSX.utils.book_append_sheet(workbook, branchSheet, 'الفروع');
-  }
-
-  if (data.expenseBreakdown.length > 0) {
-    const expenseSheet = XLSX.utils.json_to_sheet(
-      data.expenseBreakdown.map((row) => ({ التصنيف: row.category, المبلغ: row.total }))
-    );
-    XLSX.utils.book_append_sheet(workbook, expenseSheet, 'تصنيف المصروفات');
-  }
-
-  if (data.topProducts.length > 0) {
-    const productSheet = XLSX.utils.json_to_sheet(
-      data.topProducts.map((row) => ({
-        المنتج: row.productName,
-        الكمية: row.totalQuantity,
-        الإيراد: row.totalRevenue,
-      }))
-    );
-    XLSX.utils.book_append_sheet(workbook, productSheet, 'أفضل المنتجات');
   }
 }
 

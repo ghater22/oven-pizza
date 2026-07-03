@@ -8,16 +8,13 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { PeriodSelector } from '@/src/components/PeriodSelector';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { StatCard } from '@/src/components/StatCard';
-import { aggregateExpensesByCategory } from '@/src/features/analytics/expenseBreakdown';
-import { aggregateProductPerformance, topByQuantity } from '@/src/features/analytics/productPerformance';
 import { deleteExpense } from '@/src/features/expenses/service';
 import { exportReportAsExcel } from '@/src/features/reports/excel';
 import { exportReportAsPdf } from '@/src/features/reports/pdf';
-import type { ReportData } from '@/src/features/reports/types';
+import type { ReportDailyTrendRow, ReportData } from '@/src/features/reports/types';
 import { deleteRevenue } from '@/src/features/revenue/service';
 import { useBranches } from '@/src/hooks/useBranches';
 import { useExpensesForRange } from '@/src/hooks/useExpensesForRange';
-import { useProducts } from '@/src/hooks/useProducts';
 import { useRevenuesForRange } from '@/src/hooks/useRevenuesForRange';
 import { useAuthStore } from '@/src/store/auth';
 import { useBranchStore } from '@/src/store/branch';
@@ -26,34 +23,9 @@ import { formatAmount } from '@/src/utils/currency';
 import { type AnalyticsPeriod, dateRangeForPeriod, PERIOD_LABELS } from '@/src/utils/date';
 
 type DeleteTarget = 'revenues' | 'expenses' | 'all';
-type ReportProductKind = 'pizza' | 'drink' | 'sauce' | 'other';
 
 const ALL_BRANCHES_LABEL = 'كل الفروع';
 const REPORT_TITLE = 'تقرير بيتزا الفرن';
-const PRODUCT_KIND_LABELS: Record<ReportProductKind, string> = {
-  pizza: 'البيتزا',
-  drink: 'المشروبات',
-  sauce: 'الصوصات',
-  other: 'أخرى',
-};
-
-function classifyProductKind(productName: string, productCategory?: string): ReportProductKind {
-  const value = `${productName} ${productCategory ?? ''}`.toLowerCase();
-  if (value.includes('صوص') || value.includes('sauce')) return 'sauce';
-  if (
-    value.includes('مشروب') ||
-    value.includes('مشروبات') ||
-    value.includes('غازي') ||
-    value.includes('بيبسي') ||
-    value.includes('كولا') ||
-    value.includes('ماء') ||
-    value.includes('drink')
-  ) {
-    return 'drink';
-  }
-  if (value.includes('بيتزا') || value.includes('ببتزا') || value.includes('pizza')) return 'pizza';
-  return 'other';
-}
 
 export default function ReportsScreen() {
   const [period, setPeriod] = useState<AnalyticsPeriod>('week');
@@ -64,7 +36,6 @@ export default function ReportsScreen() {
   const currentUserId = useAuthStore((state) => state.user?.uid ?? '');
   const isOwner = useAuthStore((state) => state.profile?.role === 'owner');
   const { branches } = useBranches();
-  const { products } = useProducts();
 
   const { startDate, endDate } = dateRangeForPeriod(period);
   const { revenues, loading: revenuesLoading } = useRevenuesForRange(startDate, endDate);
@@ -73,25 +44,25 @@ export default function ReportsScreen() {
   const loading = revenuesLoading || expensesLoading;
 
   const scopedRevenues =
-    selectedBranchId === 'all' ? revenues : revenues.filter((r) => r.branchId === selectedBranchId);
+    selectedBranchId === 'all' ? revenues : revenues.filter((revenue) => revenue.branchId === selectedBranchId);
   const scopedExpenses =
-    selectedBranchId === 'all' ? expenses : expenses.filter((e) => e.branchId === selectedBranchId);
+    selectedBranchId === 'all' ? expenses : expenses.filter((expense) => expense.branchId === selectedBranchId);
 
   const branchNameFor = (branchId: string) => branches.find((branch) => branch.id === branchId)?.name ?? branchId;
 
-  const totalRevenue = scopedRevenues.reduce((sum, r) => sum + r.total, 0);
-  const totalExpense = scopedExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalRevenue = scopedRevenues.reduce((sum, revenue) => sum + revenue.total, 0);
+  const totalExpense = scopedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   const netProfit = totalRevenue - totalExpense;
-  const totalSoldQuantity = scopedRevenues.reduce((sum, revenue) => sum + revenue.quantity, 0);
-  const averageRevenueTicket = scopedRevenues.length > 0 ? totalRevenue / scopedRevenues.length : 0;
+  const averageRevenueEntry = scopedRevenues.length > 0 ? totalRevenue / scopedRevenues.length : 0;
+  const averageExpenseEntry = scopedExpenses.length > 0 ? totalExpense / scopedExpenses.length : 0;
 
   const branchTotals = branches.map((branch) => {
     const totalBranchRevenue = revenues
-      .filter((r) => r.branchId === branch.id)
-      .reduce((sum, r) => sum + r.total, 0);
+      .filter((revenue) => revenue.branchId === branch.id)
+      .reduce((sum, revenue) => sum + revenue.total, 0);
     const totalBranchExpense = expenses
-      .filter((e) => e.branchId === branch.id)
-      .reduce((sum, e) => sum + e.amount, 0);
+      .filter((expense) => expense.branchId === branch.id)
+      .reduce((sum, expense) => sum + expense.amount, 0);
 
     return {
       branchName: branch.name,
@@ -101,53 +72,43 @@ export default function ReportsScreen() {
     };
   });
 
-  const expenseBreakdown = aggregateExpensesByCategory(scopedExpenses);
-  const topProducts = topByQuantity(aggregateProductPerformance(scopedRevenues, products), 10).map((item) => ({
-    productName: item.productName,
-    totalQuantity: item.totalQuantity,
-    totalRevenue: item.totalRevenue,
-  }));
-  const productCategoryBuckets: Record<ReportProductKind, { totalQuantity: number; totalRevenue: number }> = {
-    pizza: { totalQuantity: 0, totalRevenue: 0 },
-    drink: { totalQuantity: 0, totalRevenue: 0 },
-    sauce: { totalQuantity: 0, totalRevenue: 0 },
-    other: { totalQuantity: 0, totalRevenue: 0 },
-  };
+  const trendByDate = new Map<string, ReportDailyTrendRow>();
   for (const revenue of scopedRevenues) {
-    const product = products.find((item) => item.id === revenue.productId);
-    const kind = classifyProductKind(revenue.productName, product?.category);
-    productCategoryBuckets[kind].totalQuantity += revenue.quantity;
-    productCategoryBuckets[kind].totalRevenue += revenue.total;
-  }
-  const productCategoryTotals = (Object.keys(productCategoryBuckets) as ReportProductKind[]).map((kind) => ({
-    category: PRODUCT_KIND_LABELS[kind],
-    totalQuantity: productCategoryBuckets[kind].totalQuantity,
-    totalRevenue: productCategoryBuckets[kind].totalRevenue,
-  }));
-  const trendByDate = new Map<string, { totalRevenue: number; totalExpense: number; totalQuantity: number }>();
-  for (const revenue of scopedRevenues) {
-    const entry = trendByDate.get(revenue.date) ?? { totalRevenue: 0, totalExpense: 0, totalQuantity: 0 };
+    const entry = trendByDate.get(revenue.date) ?? {
+      date: revenue.date,
+      totalRevenue: 0,
+      totalExpense: 0,
+      netProfit: 0,
+    };
     entry.totalRevenue += revenue.total;
-    entry.totalQuantity += revenue.quantity;
+    entry.netProfit = entry.totalRevenue - entry.totalExpense;
     trendByDate.set(revenue.date, entry);
   }
   for (const expense of scopedExpenses) {
-    const entry = trendByDate.get(expense.date) ?? { totalRevenue: 0, totalExpense: 0, totalQuantity: 0 };
+    const entry = trendByDate.get(expense.date) ?? {
+      date: expense.date,
+      totalRevenue: 0,
+      totalExpense: 0,
+      netProfit: 0,
+    };
     entry.totalExpense += expense.amount;
+    entry.netProfit = entry.totalRevenue - entry.totalExpense;
     trendByDate.set(expense.date, entry);
   }
-  const dailyTrend = Array.from(trendByDate.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, entry]) => ({
-      date,
-      totalRevenue: entry.totalRevenue,
-      totalExpense: entry.totalExpense,
-      netProfit: entry.totalRevenue - entry.totalExpense,
-      totalQuantity: entry.totalQuantity,
-    }));
+
+  const dailyTrend = Array.from(trendByDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+  const activeDays = dailyTrend.length;
+  const bestRevenueDay = dailyTrend.reduce<ReportDailyTrendRow | undefined>(
+    (best, row) => (!best || row.totalRevenue > best.totalRevenue ? row : best),
+    undefined
+  );
+  const highestExpenseDay = dailyTrend.reduce<ReportDailyTrendRow | undefined>(
+    (highest, row) => (!highest || row.totalExpense > highest.totalExpense ? row : highest),
+    undefined
+  );
 
   const branchLabel =
-    selectedBranchId === 'all' ? ALL_BRANCHES_LABEL : (branches.find((b) => b.id === selectedBranchId)?.name ?? '');
+    selectedBranchId === 'all' ? ALL_BRANCHES_LABEL : (branches.find((branch) => branch.id === selectedBranchId)?.name ?? '');
 
   const reportData: ReportData = {
     title: REPORT_TITLE,
@@ -158,30 +119,24 @@ export default function ReportsScreen() {
     totalRevenue,
     totalExpense,
     netProfit,
-    totalSoldQuantity,
-    pizzaSoldQuantity: productCategoryBuckets.pizza.totalQuantity,
-    drinkSoldQuantity: productCategoryBuckets.drink.totalQuantity,
-    sauceSoldQuantity: productCategoryBuckets.sauce.totalQuantity,
-    averageRevenueTicket,
+    averageRevenueEntry,
+    averageExpenseEntry,
     revenueCount: scopedRevenues.length,
     expenseCount: scopedExpenses.length,
+    activeDays,
+    bestRevenueDay,
+    highestExpenseDay,
     branchTotals: selectedBranchId === 'all' ? branchTotals : [],
-    expenseBreakdown,
-    topProducts,
-    productCategoryTotals,
     dailyTrend,
     revenueRows: scopedRevenues.map((revenue) => ({
       date: revenue.date,
       branchName: branchNameFor(revenue.branchId),
-      productName: revenue.productName,
-      quantity: revenue.quantity,
-      unitPrice: revenue.unitPrice,
-      total: revenue.total,
+      amount: revenue.total,
+      note: revenue.note,
     })),
     expenseRows: scopedExpenses.map((expense) => ({
       date: expense.date,
       branchName: branchNameFor(expense.branchId),
-      category: expense.category,
       amount: expense.amount,
       note: expense.note,
     })),
@@ -258,7 +213,7 @@ export default function ReportsScreen() {
           <PeriodSelector value={period} onChange={setPeriod} />
           <EmptyState
             title="لا توجد بيانات لهذه الفترة"
-            description="سجل إيرادات أو مصروفات لعرض التقرير وتصديره."
+            description="سجل دخلًا أو مصروفات لعرض التقرير وتصديره."
           />
         </>
       ) : (
@@ -281,77 +236,85 @@ export default function ReportsScreen() {
 
             <View className="mt-4 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
               <Text className="mb-3 text-right font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
-                ملخص الكميات
+                ملخص الفترة
               </Text>
               <View className="flex-row-reverse flex-wrap gap-2">
-                <QuantityPill label="إجمالي المنتجات" value={totalSoldQuantity} tone="primary" />
-                <QuantityPill label="إجمالي البيتزا" value={productCategoryBuckets.pizza.totalQuantity} tone="success" />
-                <QuantityPill label="إجمالي المشروبات" value={productCategoryBuckets.drink.totalQuantity} tone="info" />
-                <QuantityPill label="إجمالي الصوصات" value={productCategoryBuckets.sauce.totalQuantity} tone="danger" />
-              </View>
-              <View className="mt-4 flex-row-reverse justify-between gap-2">
-                <MetricItem label="عدد الإيرادات" value={String(scopedRevenues.length)} />
-                <MetricItem label="عدد المصروفات" value={String(scopedExpenses.length)} />
-                <MetricItem label="متوسط الفاتورة" value={formatAmount(averageRevenueTicket)} />
+                <MetricPill label="عمليات الدخل" value={String(scopedRevenues.length)} />
+                <MetricPill label="عمليات المصروفات" value={String(scopedExpenses.length)} />
+                <MetricPill label="أيام بها بيانات" value={String(activeDays)} />
+                <MetricPill label="متوسط الدخل" value={formatAmount(averageRevenueEntry)} />
+                <MetricPill label="متوسط المصروف" value={formatAmount(averageExpenseEntry)} />
+                <MetricPill
+                  label="أفضل يوم دخل"
+                  value={bestRevenueDay ? `${bestRevenueDay.date} | ${formatAmount(bestRevenueDay.totalRevenue)}` : '-'}
+                />
               </View>
             </View>
 
             {dailyTrend.length > 0 ? (
               <View className="mt-4 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
                 <Text className="mb-3 text-right font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
-                  اتجاه المبيعات حسب الفترة
+                  اتجاه الدخل والمصروفات
                 </Text>
                 <TrendBars rows={dailyTrend} />
               </View>
             ) : null}
 
-            {productCategoryTotals.some((row) => row.totalQuantity > 0) ? (
-              <View className="mt-4 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
-                <Text className="mb-3 text-right font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
-                  توزيع الكميات حسب النوع
-                </Text>
-                {productCategoryTotals.map((row) => (
-                  <CategoryBar key={row.category} label={row.category} value={row.totalQuantity} max={totalSoldQuantity} />
-                ))}
-              </View>
-            ) : null}
-
-            {expenseBreakdown.length > 0 ? (
+            {selectedBranchId === 'all' && branchTotals.length > 0 ? (
               <>
                 <Text className="mb-3 mt-6 font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
-                  المصروفات حسب التصنيف
+                  مقارنة الفروع
                 </Text>
-                {expenseBreakdown.map((row) => (
+                {branchTotals.map((branch) => (
                   <View
-                    key={row.category}
-                    className="mb-2 flex-row-reverse items-center justify-between rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark"
+                    key={branch.branchName}
+                    className="mb-2 rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark"
                   >
-                    <Text className="font-cairo-medium text-sm text-text-primary dark:text-text-primary-dark">
-                      {row.category}
-                    </Text>
-                    <Text className="font-cairo-semibold text-sm text-danger dark:text-danger-dark">
-                      {formatAmount(row.total)}
-                    </Text>
+                    <View className="flex-row-reverse items-center justify-between">
+                      <Text className="font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
+                        {branch.branchName}
+                      </Text>
+                      <Text
+                        className={`font-cairo-bold text-sm ${
+                          branch.netProfit >= 0 ? 'text-success dark:text-success-dark' : 'text-danger dark:text-danger-dark'
+                        }`}
+                      >
+                        {formatAmount(branch.netProfit)}
+                      </Text>
+                    </View>
+                    <View className="mt-3 flex-row-reverse gap-2">
+                      <SmallMetric label="الدخل" value={formatAmount(branch.totalRevenue)} tone="success" />
+                      <SmallMetric label="المصروف" value={formatAmount(branch.totalExpense)} tone="danger" />
+                    </View>
                   </View>
                 ))}
               </>
             ) : null}
 
-            {topProducts.length > 0 ? (
+            {dailyTrend.length > 0 ? (
               <>
                 <Text className="mb-3 mt-6 font-cairo-semibold text-base text-text-primary dark:text-text-primary-dark">
-                  أفضل المنتجات
+                  ملخص الأيام
                 </Text>
-                {topProducts.map((row) => (
+                {dailyTrend.map((row) => (
                   <View
-                    key={row.productName}
+                    key={row.date}
                     className="mb-2 flex-row-reverse items-center justify-between rounded-2xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark"
                   >
-                    <Text className="font-cairo-medium text-sm text-text-primary dark:text-text-primary-dark">
-                      {row.productName}
-                    </Text>
-                    <Text className="font-cairo-semibold text-sm text-success dark:text-success-dark">
-                      {formatAmount(row.totalRevenue)}
+                    <View>
+                      <Text className="font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
+                        {row.date}
+                      </Text>
+                      <Text className="mt-1 text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">
+                        دخل {formatAmount(row.totalRevenue)} | مصروف {formatAmount(row.totalExpense)}
+                      </Text>
+                    </View>
+                    <Text
+                      className={`font-cairo-bold text-sm ${
+                        row.netProfit >= 0 ? 'text-success dark:text-success-dark' : 'text-danger dark:text-danger-dark'
+                      }`}
+                    >
+                      {formatAmount(row.netProfit)}
                     </Text>
                   </View>
                 ))}
@@ -384,7 +347,7 @@ export default function ReportsScreen() {
                   إدارة بيانات الفترة
                 </Text>
                 <Text className="mt-1 text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">
-                  الحذف يطبق على الفرع والفترة المحددين حالياً.
+                  الحذف يطبق على الفرع والفترة المحددين حاليًا.
                 </Text>
                 <View className="mt-4 gap-2">
                   <DeleteButton
@@ -441,81 +404,77 @@ function DeleteButton({
   );
 }
 
-function QuantityPill({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: 'primary' | 'success' | 'info' | 'danger';
-}) {
-  const toneClass =
-    tone === 'success'
-      ? 'border-success'
-      : tone === 'danger'
-        ? 'border-danger'
-        : tone === 'info'
-          ? 'border-secondary'
-          : 'border-primary';
+function MetricPill({ label, value }: { label: string; value: string }) {
   return (
-    <View className={`min-w-[47%] flex-1 rounded-xl border ${toneClass} px-3 py-2`}>
+    <View className="min-w-[47%] flex-1 rounded-xl border border-border bg-background px-3 py-2 dark:border-border-dark dark:bg-background-dark">
       <Text className="text-right font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">{label}</Text>
-      <Text className="mt-1 text-right font-cairo-bold text-lg text-text-primary dark:text-text-primary-dark">
+      <Text className="mt-1 text-right font-cairo-bold text-base text-text-primary dark:text-text-primary-dark">
         {value}
       </Text>
     </View>
   );
 }
 
-function MetricItem({ label, value }: { label: string; value: string }) {
+function SmallMetric({ label, value, tone }: { label: string; value: string; tone: 'success' | 'danger' }) {
   return (
     <View className="flex-1 rounded-xl bg-background px-2 py-2 dark:bg-background-dark">
       <Text className="text-center font-cairo text-[11px] text-text-secondary dark:text-text-secondary-dark">
         {label}
       </Text>
-      <Text className="mt-1 text-center font-cairo-semibold text-sm text-text-primary dark:text-text-primary-dark">
+      <Text
+        className={`mt-1 text-center font-cairo-semibold text-sm ${
+          tone === 'success' ? 'text-success dark:text-success-dark' : 'text-danger dark:text-danger-dark'
+        }`}
+      >
         {value}
       </Text>
     </View>
   );
 }
 
-function CategoryBar({ label, value, max }: { label: string; value: number; max: number }) {
-  const width = max > 0 ? Math.max(6, Math.round((value / max) * 100)) : 0;
+function TrendBars({ rows }: { rows: ReportData['dailyTrend'] }) {
+  const max = Math.max(...rows.map((row) => Math.max(row.totalRevenue, row.totalExpense)), 1);
   return (
-    <View className="mb-3">
-      <View className="mb-1 flex-row-reverse items-center justify-between">
-        <Text className="font-cairo-medium text-xs text-text-primary dark:text-text-primary-dark">{label}</Text>
-        <Text className="font-cairo-semibold text-xs text-text-secondary dark:text-text-secondary-dark">{value}</Text>
-      </View>
-      <View className="h-2 overflow-hidden rounded-full bg-background dark:bg-background-dark">
-        <View className="h-2 rounded-full bg-primary dark:bg-primary-dark" style={{ width: `${width}%` }} />
+    <View className="gap-3">
+      {rows.slice(-10).map((row) => {
+        const revenueWidth = row.totalRevenue > 0 ? Math.max(5, Math.round((row.totalRevenue / max) * 100)) : 0;
+        const expenseWidth = row.totalExpense > 0 ? Math.max(5, Math.round((row.totalExpense / max) * 100)) : 0;
+        return (
+          <View key={row.date}>
+            <View className="mb-1 flex-row-reverse items-center justify-between">
+              <Text className="font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">{row.date}</Text>
+              <Text
+                className={`font-cairo-semibold text-xs ${
+                  row.netProfit >= 0 ? 'text-success dark:text-success-dark' : 'text-danger dark:text-danger-dark'
+                }`}
+              >
+                صافي {formatAmount(row.netProfit)}
+              </Text>
+            </View>
+            <View className="gap-1">
+              <View className="h-2 overflow-hidden rounded-full bg-background dark:bg-background-dark">
+                <View className="h-2 rounded-full bg-success dark:bg-success-dark" style={{ width: `${revenueWidth}%` }} />
+              </View>
+              <View className="h-2 overflow-hidden rounded-full bg-background dark:bg-background-dark">
+                <View className="h-2 rounded-full bg-danger dark:bg-danger-dark" style={{ width: `${expenseWidth}%` }} />
+              </View>
+            </View>
+          </View>
+        );
+      })}
+      <View className="mt-1 flex-row-reverse gap-3">
+        <LegendDot label="دخل" colorClass="bg-success dark:bg-success-dark" />
+        <LegendDot label="مصروف" colorClass="bg-danger dark:bg-danger-dark" />
       </View>
     </View>
   );
 }
 
-function TrendBars({ rows }: { rows: ReportData['dailyTrend'] }) {
-  const max = Math.max(...rows.map((row) => row.totalRevenue), 1);
+function LegendDot({ label, colorClass }: { label: string; colorClass: string }) {
   return (
-    <View className="gap-2">
-      {rows.slice(-10).map((row) => {
-        const width = Math.max(5, Math.round((row.totalRevenue / max) * 100));
-        return (
-          <View key={row.date}>
-            <View className="mb-1 flex-row-reverse items-center justify-between">
-              <Text className="font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">{row.date}</Text>
-              <Text className="font-cairo-semibold text-xs text-success dark:text-success-dark">
-                {formatAmount(row.totalRevenue)}
-              </Text>
-            </View>
-            <View className="h-2 overflow-hidden rounded-full bg-background dark:bg-background-dark">
-              <View className="h-2 rounded-full bg-success dark:bg-success-dark" style={{ width: `${width}%` }} />
-            </View>
-          </View>
-        );
-      })}
+    <View className="flex-row-reverse items-center gap-1">
+      <View className={`h-2 w-2 rounded-full ${colorClass}`} />
+      <Text className="font-cairo text-xs text-text-secondary dark:text-text-secondary-dark">{label}</Text>
     </View>
   );
 }

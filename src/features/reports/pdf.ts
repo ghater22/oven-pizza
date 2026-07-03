@@ -26,10 +26,10 @@ function tableOrEmpty(headers: string[], rows: string[][], emptyText: string): s
 }
 
 function buildBars(rows: { label: string; value: number; helper: string }[], tone = 'primary'): string {
-  const max = Math.max(...rows.map((row) => row.value), 1);
+  const max = Math.max(...rows.map((row) => Math.abs(row.value)), 1);
   return rows
     .map((row) => {
-      const width = row.value > 0 ? Math.max(5, Math.round((row.value / max) * 100)) : 0;
+      const width = row.value !== 0 ? Math.max(5, Math.round((Math.abs(row.value) / max) * 100)) : 0;
       return `<div class="bar-row"><span>${escapeHtml(row.label)}</span><div class="bar-track"><div class="bar-fill ${tone}" style="width:${width}%"></div></div><b>${escapeHtml(row.helper)}</b></div>`;
     })
     .join('');
@@ -40,15 +40,12 @@ function buildHtml(data: ReportData): string {
   const revenueRows = data.revenueRows.map((row) => [
     row.date,
     row.branchName,
-    row.productName,
-    String(row.quantity),
-    formatAmount(row.unitPrice),
-    formatAmount(row.total),
+    row.note ?? '-',
+    formatAmount(row.amount),
   ]);
   const expenseRows = data.expenseRows.map((row) => [
     row.date,
     row.branchName,
-    row.category,
     row.note ?? '-',
     formatAmount(row.amount),
   ]);
@@ -58,38 +55,27 @@ function buildHtml(data: ReportData): string {
     formatAmount(branch.totalExpense),
     formatAmount(branch.netProfit),
   ]);
-  const expenseBreakdownRows = data.expenseBreakdown.map((row) => [row.category, formatAmount(row.total)]);
-  const productRows = data.topProducts.map((row) => [
-    row.productName,
-    String(row.totalQuantity),
-    formatAmount(row.totalRevenue),
-  ]);
-  const categoryRows = data.productCategoryTotals.map((row) => [
-    row.category,
-    String(row.totalQuantity),
-    formatAmount(row.totalRevenue),
-  ]);
   const trendRows = data.dailyTrend.map((row) => [
     row.date,
     formatAmount(row.totalRevenue),
     formatAmount(row.totalExpense),
     formatAmount(row.netProfit),
-    String(row.totalQuantity),
   ]);
-  const categoryBars = buildBars(
-    data.productCategoryTotals.map((row) => ({
-      label: row.category,
-      value: row.totalQuantity,
-      helper: `${row.totalQuantity} | ${formatAmount(row.totalRevenue)}`,
-    }))
-  );
-  const trendBars = buildBars(
+  const revenueBars = buildBars(
     data.dailyTrend.slice(-12).map((row) => ({
       label: row.date,
       value: row.totalRevenue,
       helper: formatAmount(row.totalRevenue),
     })),
     'success'
+  );
+  const expenseBars = buildBars(
+    data.dailyTrend.slice(-12).map((row) => ({
+      label: row.date,
+      value: row.totalExpense,
+      helper: formatAmount(row.totalExpense),
+    })),
+    'danger'
   );
 
   return `
@@ -121,6 +107,7 @@ function buildHtml(data: ReportData): string {
         .bar-track { background: #FFF6F0; border-radius: 999px; height: 9px; overflow: hidden; }
         .bar-fill { background: #D64535; border-radius: 999px; height: 9px; }
         .bar-fill.success { background: #2F8F5B; }
+        .bar-fill.danger { background: #A93025; }
         .footer { color: #7A6A5F; font-size: 10px; margin-top: 24px; text-align: center; }
         @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } h2 { break-after: avoid; } tr { break-inside: avoid; } }
       </style>
@@ -130,51 +117,42 @@ function buildHtml(data: ReportData): string {
       <div class="subtitle">${escapeHtml(data.periodLabel)} (${escapeHtml(data.startDate)} - ${escapeHtml(data.endDate)}) | ${escapeHtml(data.branchLabel)} | تاريخ التصدير: ${escapeHtml(generatedAt)}</div>
 
       <div class="summary">
-        <div class="card"><div class="label">الدخل</div><div class="value positive">${escapeHtml(formatAmount(data.totalRevenue))}</div></div>
-        <div class="card"><div class="label">المصروف</div><div class="value negative">${escapeHtml(formatAmount(data.totalExpense))}</div></div>
+        <div class="card"><div class="label">إجمالي الدخل</div><div class="value positive">${escapeHtml(formatAmount(data.totalRevenue))}</div></div>
+        <div class="card"><div class="label">إجمالي المصروفات</div><div class="value negative">${escapeHtml(formatAmount(data.totalExpense))}</div></div>
         <div class="card"><div class="label">صافي الربح</div><div class="value ${data.netProfit >= 0 ? 'positive' : 'negative'}">${escapeHtml(formatAmount(data.netProfit))}</div></div>
       </div>
 
-      <h2>ملخص الكميات والمؤشرات</h2>
+      <h2>ملخص الفترة</h2>
       <div class="summary four">
-        <div class="card"><div class="label">إجمالي كمية المنتجات المباعة</div><div class="value">${escapeHtml(data.totalSoldQuantity)}</div></div>
-        <div class="card"><div class="label">إجمالي البيتزا المباعة</div><div class="value">${escapeHtml(data.pizzaSoldQuantity)}</div></div>
-        <div class="card"><div class="label">إجمالي المشروبات</div><div class="value">${escapeHtml(data.drinkSoldQuantity)}</div></div>
-        <div class="card"><div class="label">إجمالي الصوصات</div><div class="value">${escapeHtml(data.sauceSoldQuantity)}</div></div>
+        <div class="card"><div class="label">عدد عمليات الدخل</div><div class="value">${escapeHtml(data.revenueCount)}</div></div>
+        <div class="card"><div class="label">عدد عمليات المصروفات</div><div class="value">${escapeHtml(data.expenseCount)}</div></div>
+        <div class="card"><div class="label">متوسط إدخال الدخل</div><div class="value">${escapeHtml(formatAmount(data.averageRevenueEntry))}</div></div>
+        <div class="card"><div class="label">متوسط إدخال المصروف</div><div class="value">${escapeHtml(formatAmount(data.averageExpenseEntry))}</div></div>
       </div>
       <div class="summary">
-        <div class="card"><div class="label">عدد عمليات الإيراد</div><div class="value">${escapeHtml(data.revenueCount)}</div></div>
-        <div class="card"><div class="label">عدد عمليات المصروف</div><div class="value">${escapeHtml(data.expenseCount)}</div></div>
-        <div class="card"><div class="label">متوسط فاتورة الإيراد</div><div class="value">${escapeHtml(formatAmount(data.averageRevenueTicket))}</div></div>
+        <div class="card"><div class="label">أيام تحتوي بيانات</div><div class="value">${escapeHtml(data.activeDays)}</div></div>
+        <div class="card"><div class="label">أفضل يوم دخل</div><div class="value">${escapeHtml(data.bestRevenueDay ? `${data.bestRevenueDay.date} - ${formatAmount(data.bestRevenueDay.totalRevenue)}` : '-')}</div></div>
+        <div class="card"><div class="label">أعلى يوم مصروفات</div><div class="value">${escapeHtml(data.highestExpenseDay ? `${data.highestExpenseDay.date} - ${formatAmount(data.highestExpenseDay.totalExpense)}` : '-')}</div></div>
       </div>
 
-      <h2>رسم توزيع الكميات حسب النوع</h2>
-      ${categoryBars || '<div class="empty">لا توجد كميات مباعة في هذه الفترة.</div>'}
+      <h2>اتجاه الدخل اليومي</h2>
+      ${revenueBars || '<div class="empty">لا توجد بيانات دخل في هذه الفترة.</div>'}
 
-      <h2>خط اتجاه المبيعات</h2>
-      ${trendBars || '<div class="empty">لا توجد بيانات اتجاه في هذه الفترة.</div>'}
+      <h2>اتجاه المصروفات اليومية</h2>
+      ${expenseBars || '<div class="empty">لا توجد بيانات مصروفات في هذه الفترة.</div>'}
 
-      <h2>تفاصيل الإيرادات</h2>
-      ${tableOrEmpty(['التاريخ', 'الفرع', 'المنتج', 'الكمية', 'سعر الوحدة', 'الإجمالي'], revenueRows, 'لا توجد إيرادات في هذه الفترة.')}
+      <h2>تفاصيل الدخل</h2>
+      ${tableOrEmpty(['التاريخ', 'الفرع', 'الملاحظات', 'المبلغ'], revenueRows, 'لا توجد إيرادات في هذه الفترة.')}
 
       <h2>تفاصيل المصروفات</h2>
-      ${tableOrEmpty(['التاريخ', 'الفرع', 'التصنيف', 'الملاحظة', 'المبلغ'], expenseRows, 'لا توجد مصروفات في هذه الفترة.')}
+      ${tableOrEmpty(['التاريخ', 'الفرع', 'الملاحظات', 'المبلغ'], expenseRows, 'لا توجد مصروفات في هذه الفترة.')}
 
-      ${data.branchTotals.length > 1 ? `<h2>مقارنة الفروع</h2>${tableOrEmpty(['الفرع', 'الدخل', 'المصروف', 'صافي الربح'], branchRows, 'لا توجد بيانات فروع.')}` : ''}
-
-      <h2>المصروفات حسب التصنيف</h2>
-      ${tableOrEmpty(['التصنيف', 'المبلغ'], expenseBreakdownRows, 'لا توجد مصروفات مصنفة في هذه الفترة.')}
-
-      <h2>أفضل المنتجات</h2>
-      ${tableOrEmpty(['المنتج', 'الكمية', 'الإيراد'], productRows, 'لا توجد مبيعات منتجات في هذه الفترة.')}
-
-      <h2>إجماليات النوع</h2>
-      ${tableOrEmpty(['النوع', 'الكمية', 'الإيراد'], categoryRows, 'لا توجد إجماليات أنواع.')}
+      ${data.branchTotals.length > 1 ? `<h2>مقارنة الفروع</h2>${tableOrEmpty(['الفرع', 'الدخل', 'المصروفات', 'صافي الربح'], branchRows, 'لا توجد بيانات فروع.')}` : ''}
 
       <h2>جدول اتجاه الفترة</h2>
-      ${tableOrEmpty(['التاريخ', 'الدخل', 'المصروف', 'صافي الربح', 'الكمية'], trendRows, 'لا توجد بيانات اتجاه.')}
+      ${tableOrEmpty(['التاريخ', 'الدخل', 'المصروفات', 'صافي الربح'], trendRows, 'لا توجد بيانات اتجاه.')}
 
-      <div class="footer">بيتزا الفرن - تقرير محاسبي احترافي من النظام</div>
+      <div class="footer">بيتزا الفرن - تقرير مالي من النظام</div>
     </body>
   </html>`;
 }
